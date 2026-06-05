@@ -1,0 +1,21 @@
+{
+  "name": "visualizer",
+  "version": "1.0.0",
+  "description": "Node + Vue time-series dashboard visualizer",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
+    "build": "npm run build --prefix web",
+    "start": "npm run start --prefix server"
+  },
+  "keywords": [
+    "vue",
+    "dashboard",
+    "timeseries"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

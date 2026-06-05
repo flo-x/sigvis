@@ -1,0 +1,23 @@
+services:
+  visualizer:
+    build: .
+    image: visualizer:latest
+    container_name: visualizer
+    ports:
+      - "3000:3000"
+    volumes:
+      # All dashboards and processor definitions survive container restarts/updates
+      - visualizer-data:/app/server/data
+    environment:
+      PORT: "3000"
+      MIN_PUSH_INTERVAL_MS: "30"
+      # MQTT — uncomment and fill in to enable
+      # MQTT_BROKER_URL: "mqtt://192.168.1.10:1883"
+      # MQTT_CLIENT_ID: ""
+      # MQTT_USERNAME: ""
+      # MQTT_PASSWORD: ""
+      # MQTT_INGEST_TOPIC: "cmnd/visualizer/ingest"
+    restart: unless-stopped
+
+volumes:
+  visualizer-data:

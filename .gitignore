@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+web/dist/
+
+# Runtime data — contains credentials and personal configuration
+server/data/
+
+# macOS metadata
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
