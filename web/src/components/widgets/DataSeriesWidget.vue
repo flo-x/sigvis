@@ -479,6 +479,7 @@ watch(draftSeriesIds, (newIds) => {
       :x-axis-unit="widget.config?.xAxisUnit ?? ''"
       :y-axis-label="widget.config?.yAxisLabel ?? ''"
       :y-axis-unit="widget.config?.yAxisUnit ?? ''"
+      :theme="runtimeSettings.resolvedTheme"
       @data-consumed="onChartDataConsumed"
       @zoom-history-request="onZoomHistoryRequest"
     />

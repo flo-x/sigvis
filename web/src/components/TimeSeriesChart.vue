@@ -51,6 +51,11 @@ const props = defineProps({
   showLegend: {
     type: Boolean,
     default: true
+  },
+  theme: {
+    type: String,
+    default: "light",
+    validator: (v) => ["light", "dark"].includes(v)
   }
 });
 const emit = defineEmits(["zoom-history-request", "data-consumed"]);
@@ -331,6 +336,13 @@ function buildCharts() {
     return;
   }
 
+  // Read theme colors from CSS variables so uPlot canvas content adapts to the theme.
+  const style = getComputedStyle(document.documentElement);
+  const getCSSVar = (name) => style.getPropertyValue(name).trim();
+  const axisStroke = getCSSVar("--c-text-2")   || "#374151";
+  const gridStroke = getCSSVar("--c-border")    || "#d1d5db";
+  const tickStroke = getCSSVar("--c-border")    || "#d1d5db";
+
   const xData = getXData(props.chartData, props.time);
   const mainValues = props.chartData.series.map((series) => series.values);
   const mainData = [xData, ...mainValues];
@@ -490,11 +502,17 @@ function buildCharts() {
       {
         // X-axis: only override tick formatter when unit or label set on a numeric axis.
         ...(xAxisLabel ? { label: xAxisLabel, labelSize: 32 } : {}),
-        ...(xAxisUnit  ? { values: (_u, vals) => vals.map(v => v == null ? "" : fmtX(v)) } : {})
+        ...(xAxisUnit  ? { values: (_u, vals) => vals.map(v => v == null ? "" : fmtX(v)) } : {}),
+        stroke: axisStroke,
+        grid:  { stroke: gridStroke, width: 1 },
+        ticks: { stroke: tickStroke, width: 1 }
       },
       {
         ...(yAxisLabel ? { label: yAxisLabel, labelSize: 32 } : {}),
         values: (_u, vals) => vals.map(v => v == null ? "" : fmtY(v)),
+        stroke: axisStroke,
+        grid:  { stroke: gridStroke, width: 1 },
+        ticks: { stroke: tickStroke, width: 1 },
         // uPlot's default size function measures ticks with its own internal
         // formatter, ignoring our custom `values` callback. Override it so the
         // axis is wide enough to fit the actual formatted strings (including any
@@ -855,7 +873,7 @@ watch(
   [() => props.valueFormat, () => props.valueDecimals,
    () => props.xAxisLabel, () => props.xAxisUnit,
    () => props.yAxisLabel, () => props.yAxisUnit,
-   () => props.showLegend],
+   () => props.showLegend, () => props.theme],
   () => {
     if (mainChart) {
       destroyCharts();

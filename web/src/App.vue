@@ -27,7 +27,9 @@ import {
   runtimeSettings,
   setRenderHz,
   setPointsToRequest,
-  setShowPerformanceOverlay
+  setShowPerformanceOverlay,
+  setTheme,
+  setResolvedTheme
 } from "./stores/runtimeSettingsStore";
 import { cadenceRenderMs, setGlobalRenderHz } from "./services/globalCadence";
 
@@ -180,6 +182,48 @@ watch(
   },
   { immediate: true }
 );
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+let systemDarkQuery = null;
+
+function applyTheme(choice) {
+  const root = document.documentElement;
+  let resolved;
+  if (choice === "dark") {
+    resolved = "dark";
+  } else if (choice === "light") {
+    resolved = "light";
+  } else {
+    resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  root.setAttribute("data-theme", resolved);
+  setResolvedTheme(resolved);
+}
+
+function setupSystemListener(choice) {
+  if (systemDarkQuery) {
+    systemDarkQuery.removeEventListener("change", onSystemChange);
+  }
+  if (choice === "system") {
+    systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    systemDarkQuery.addEventListener("change", onSystemChange);
+  } else {
+    systemDarkQuery = null;
+  }
+}
+
+function onSystemChange() {
+  if (runtimeSettings.theme === "system") applyTheme("system");
+}
+
+watch(
+  () => runtimeSettings.theme,
+  (choice) => {
+    applyTheme(choice);
+    setupSystemListener(choice);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -250,6 +294,17 @@ watch(
           />
           Performance overlay
         </label>
+        <label class="settings-field">
+          Theme
+          <select
+            :value="runtimeSettings.theme"
+            @change="setTheme($event.target.value)"
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
         <div class="dialog-actions">
           <button type="button" class="primary" @click="showSettingsDialog = false">Close</button>
         </div>
@@ -302,12 +357,15 @@ watch(
   gap: 0.75rem;
   font-size: 0.875rem;
 }
-.settings-field input[type="number"] {
+.settings-field input[type="number"],
+.settings-field select {
   width: 5rem;
   padding: 0.25rem 0.4rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 4px;
   font: inherit;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 .settings-field--checkbox {
   justify-content: flex-start;

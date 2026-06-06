@@ -1,3 +1,51 @@
+/* ── Theme tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --c-bg:             #f5f7fb;
+  --c-surface:        #ffffff;
+  --c-surface-subtle: #f9fafb;
+  --c-surface-hover:  #f3f4f6;
+  --c-border-subtle:  #e5e7eb;
+  --c-border:         #d1d5db;
+  --c-text:           #111827;
+  --c-text-2:         #374151;
+  --c-text-3:         #6b7280;
+  --c-text-4:         #9ca3af;
+  --c-primary:        #1d4ed8;
+  --c-primary-2:      #2563eb;
+  --c-primary-bg:     #eff6ff;
+  --c-primary-border: #bfdbfe;
+  --c-danger:         #b91c1c;
+  --c-danger-border:  #ef4444;
+  --c-danger-bg:      #fee2e2;
+  --c-amber:          #f59e0b;
+  --c-amber-hover:    #d97706;
+  --c-indigo:         #6366f1;
+}
+
+[data-theme="dark"] {
+  --c-bg:             #141414;
+  --c-surface:        #222222;
+  --c-surface-subtle: #141414;
+  --c-surface-hover:  #2c2c2c;
+  --c-border-subtle:  #282828;
+  --c-border:         #383838;
+  --c-text:           #f0f0f0;
+  --c-text-2:         #c8c8c8;
+  --c-text-3:         #888888;
+  --c-text-4:         #555555;
+  --c-primary:        #b0b0b0;
+  --c-primary-2:      #c8c8c8;
+  --c-primary-bg:     #282828;
+  --c-primary-border: #484848;
+  --c-danger:         #f87171;
+  --c-danger-border:  #f87171;
+  --c-danger-bg:      #3d1515;
+  --c-amber:          #fbbf24;
+  --c-amber-hover:    #f59e0b;
+  --c-indigo:         #a0a0a0;
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -5,8 +53,8 @@
 body {
   margin: 0;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f5f7fb;
-  color: #111827;
+  background: var(--c-bg);
+  color: var(--c-text);
 }
 
 #app {
@@ -23,24 +71,26 @@ h1 {
 }
 
 button {
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
   border-radius: 6px;
   padding: 0.35rem 0.65rem;
   cursor: pointer;
 }
 
 button.primary {
-  background: #111827;
-  border-color: #111827;
-  color: #fff;
+  background: var(--c-text);
+  border-color: var(--c-text);
+  color: var(--c-surface);
 }
 
 button.danger {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--c-danger-border);
+  color: var(--c-danger);
 }
 
+/* ── Tab bar ──────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
   align-items: flex-end;
@@ -48,10 +98,11 @@ button.danger {
 }
 
 .dashboard-tabs {
+  display: flex;
   gap: 0;
   flex-wrap: wrap;
   flex: 1;
-  border-bottom: 2px solid #d1d5db;
+  border-bottom: 2px solid var(--c-border);
 }
 
 .dashboard-tabs .tab {
@@ -59,12 +110,12 @@ button.danger {
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.9rem;
-  margin-bottom: -2px;           /* overlap the bottom border */
+  margin-bottom: -2px;
   border: 1px solid transparent;
   border-bottom: 2px solid transparent;
   border-radius: 6px 6px 0 0;
   background: transparent;
-  color: #6b7280;
+  color: var(--c-text-3);
   font-size: 0.875rem;
   cursor: pointer;
   white-space: nowrap;
@@ -72,27 +123,27 @@ button.danger {
 }
 
 .dashboard-tabs .tab:hover:not(.active) {
-  background: #f3f4f6;
-  color: #374151;
-  border-color: #e5e7eb;
+  background: var(--c-surface-hover);
+  color: var(--c-text-2);
+  border-color: var(--c-border-subtle);
   border-bottom-color: transparent;
 }
 
 .dashboard-tabs .tab.active {
-  background: #fff;
-  color: #1d4ed8;
+  background: var(--c-surface);
+  color: var(--c-primary);
   font-weight: 600;
-  border-color: #d1d5db;
-  border-bottom-color: #fff;     /* "lifts" the tab above the bottom border */
+  border-color: var(--c-border);
+  border-bottom-color: var(--c-surface);
 }
 
 .delete-tab {
-  color: #b91c1c;
+  color: var(--c-danger);
   font-weight: 700;
 }
 
 .dirty-dot {
-  color: #f59e0b;
+  color: var(--c-amber);
   font-weight: 700;
 }
 
@@ -104,12 +155,12 @@ button.danger {
   border: none;
   background: transparent;
   border-radius: 3px;
-  color: #f59e0b;
+  color: var(--c-amber);
   cursor: pointer;
   line-height: 1;
 }
 .tab-save-btn:hover {
-  color: #d97706;
+  color: var(--c-amber-hover);
   background: rgba(245, 158, 11, 0.12);
 }
 
@@ -117,12 +168,12 @@ button.danger {
   font: inherit;
   font-size: 0.875rem;
   border: none;
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--c-primary-2);
   border-radius: 3px;
   padding: 0 0.25rem;
   width: 10rem;
-  background: #fff;
-  color: #111827;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .tab-dragging {
@@ -130,8 +181,8 @@ button.danger {
 }
 
 .tab-drag-over {
-  border-color: #2563eb !important;
-  background: #eff6ff !important;
+  border-color: var(--c-primary-2) !important;
+  background: var(--c-primary-bg) !important;
 }
 
 .dashboard-actions {
@@ -140,7 +191,7 @@ button.danger {
   align-items: center;
   flex-shrink: 0;
   padding: 0 0.5rem 0.4rem;
-  border-bottom: 2px solid #d1d5db;
+  border-bottom: 2px solid var(--c-border);
   margin-bottom: 0;
 }
 
@@ -149,46 +200,47 @@ button.danger {
   align-items: center;
   gap: 0.35rem;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--c-text-2);
 }
 
 .runtime-setting input {
   width: 5.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 6px;
   padding: 0.2rem 0.35rem;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .runtime-setting--checkbox input {
   width: auto;
-  accent-color: #6366f1;
+  accent-color: var(--c-indigo);
 }
 
 .name-pill {
-  background: #e5e7eb;
+  background: var(--c-surface-hover);
   border-radius: 99px;
   padding: 0.25rem 0.65rem;
   font-size: 0.85rem;
 }
 
 .action-error {
-  color: #b91c1c;
+  color: var(--c-danger);
   margin: 0.5rem 0;
 }
 
+/* ── Grid ─────────────────────────────────────────────────────────────────── */
 .dashboard-grid-wrapper {
   min-height: 400px;
 }
 
 .grid-stack-item-content {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   overflow: hidden;
 }
 
-/* GridStack can leave ui-resizable-autohide on items after dynamic remove/add.
-   Enforce handle visibility behavior from actual hover state instead. */
 .grid-stack-item > .ui-resizable-handle {
   display: none !important;
 }
@@ -198,6 +250,7 @@ button.danger {
   display: block !important;
 }
 
+/* ── Widget ───────────────────────────────────────────────────────────────── */
 .widget-shell {
   display: flex;
   flex-direction: column;
@@ -208,7 +261,7 @@ button.danger {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--c-border-subtle);
   padding: 0.45rem 0.6rem;
   cursor: move;
 }
@@ -228,13 +281,13 @@ button.danger {
 
 .widget-title small {
   font-size: 0.72rem;
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .widget-remove-btn {
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--c-text-4);
   font-size: 0.8rem;
   line-height: 1;
   padding: 0 3px;
@@ -242,8 +295,8 @@ button.danger {
   border-radius: 3px;
 }
 .widget-remove-btn:hover {
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--c-danger);
+  background: var(--c-danger-bg);
 }
 
 .widget-body {
@@ -256,6 +309,7 @@ button.danger {
   overflow: hidden;
 }
 
+/* ── Data series widget ───────────────────────────────────────────────────── */
 .data-series-widget {
   display: flex;
   flex-direction: column;
@@ -276,10 +330,12 @@ button.danger {
 }
 
 .config-field input {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 6px;
   padding: 0.4rem 0.5rem;
   font: inherit;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .config-checkbox-field {
@@ -297,13 +353,14 @@ button.danger {
 
 .widget-message {
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--c-text-2);
 }
 
 .widget-message.error {
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
+/* ── Chart ────────────────────────────────────────────────────────────────── */
 .chart-wrapper {
   position: relative;
   display: flex;
@@ -343,9 +400,9 @@ button.danger {
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 4px;
-  background: #f9fafb;
+  background: var(--c-surface-subtle);
 }
 
 .chart-overview-target {
@@ -367,7 +424,7 @@ button.danger {
   position: absolute;
   top: 0;
   bottom: 0;
-  border: 1px solid #6b7280;
+  border: 1px solid var(--c-text-3);
   background: rgba(107, 114, 128, 0.18);
   pointer-events: none;
 }
@@ -377,7 +434,7 @@ button.danger {
   top: 0;
   width: 8px;
   height: 100%;
-  background: #6b7280;
+  background: var(--c-text-3);
   border-radius: 1px;
   pointer-events: auto;
   cursor: ew-resize;
@@ -391,21 +448,25 @@ button.danger {
   right: -4px;
 }
 
+/* ── Dialogs ──────────────────────────────────────────────────────────────── */
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   display: grid;
   place-items: center;
+  z-index: 600;
 }
 
 .dialog {
-  background: #fff;
+  background: var(--c-surface);
+  color: var(--c-text);
   border-radius: 10px;
   width: min(560px, 92vw);
   max-height: 75vh;
   overflow: auto;
   padding: 1rem;
+  border: 1px solid var(--c-border);
 }
 
 .dialog h3 {
@@ -429,7 +490,7 @@ button.danger {
 }
 
 .dialog-empty {
-  color: #6b7280;
+  color: var(--c-text-3);
   font-size: 0.9rem;
 }
 
@@ -439,11 +500,11 @@ button.danger {
   justify-content: flex-end;
 }
 
-/* ── Widget config slide-in panel ─────────────────────────────────────────── */
+/* ── Config slide-in panel ────────────────────────────────────────────────── */
 .config-panel-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 400;
 }
 
@@ -454,8 +515,8 @@ button.danger {
   bottom: 0;
   min-width: 300px;
   max-width: 95vw;
-  background: #fff;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  background: var(--c-surface);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.25);
   z-index: 401;
   display: flex;
   flex-direction: column;
@@ -483,13 +544,13 @@ button.danger {
   width: 2px;
   height: 2.5rem;
   border-radius: 1px;
-  background: #d1d5db;
+  background: var(--c-border);
   transition: background 0.15s;
 }
 
 .config-panel-resize:hover::after,
 .config-panel-resize:active::after {
-  background: #6366f1;
+  background: var(--c-indigo);
 }
 
 .config-panel.open {
@@ -501,7 +562,7 @@ button.danger {
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1rem 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--c-border-subtle);
 }
 
 .config-panel-header h3 {
@@ -514,7 +575,7 @@ button.danger {
   border: none;
   background: none;
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--c-text-3);
   cursor: pointer;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
@@ -522,8 +583,8 @@ button.danger {
 }
 
 .config-panel-close:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--c-surface-hover);
+  color: var(--c-text);
 }
 
 .config-toggle-row {
@@ -540,7 +601,7 @@ button.danger {
   height: 1rem;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: #1d4ed8;
+  accent-color: var(--c-primary);
 }
 
 .config-panel-body {
@@ -554,14 +615,14 @@ button.danger {
 
 .config-panel-footer {
   padding: 0.75rem 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--c-border-subtle);
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
 }
 
 .config-series-fieldset {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border-subtle);
   border-radius: 6px;
   padding: 0.5rem 0.75rem 0.75rem;
   margin: 0;
@@ -570,7 +631,7 @@ button.danger {
 .config-series-fieldset legend {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--c-text-2);
   padding: 0 0.25rem;
 }
 
@@ -579,10 +640,12 @@ button.danger {
   width: 100%;
   margin: 0.4rem 0 0.35rem;
   padding: 0.35rem 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 6px;
   font: inherit;
   font-size: 0.85rem;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .config-series-scroll {
@@ -602,13 +665,13 @@ button.danger {
   height: 1rem;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: #1d4ed8;
+  accent-color: var(--c-primary);
 }
 
 .color-swatch-btn {
   width: 1.6rem;
   height: 1.6rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--c-border);
   border-radius: 4px;
   cursor: pointer;
   flex-shrink: 0;
@@ -616,9 +679,10 @@ button.danger {
 }
 
 .color-swatch-btn:hover {
-  border-color: #6b7280;
+  border-color: var(--c-text-3);
 }
 
+/* ── Color picker popup ───────────────────────────────────────────────────── */
 .cp-popup-backdrop {
   position: fixed;
   inset: 0;
@@ -628,11 +692,11 @@ button.danger {
 .cp-popup {
   position: fixed;
   z-index: 501;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: 10px;
   padding: 0.7rem 0.75rem 0.65rem;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -643,7 +707,7 @@ button.danger {
   justify-content: flex-end;
   gap: 0.45rem;
   padding-top: 0.1rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-subtle);
 }
 
 /* ── ColorPicker component (cp-*) ─────────────────────────────────────────── */
@@ -657,7 +721,7 @@ button.danger {
 
 .cp-tabs {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--c-border-subtle);
   margin-bottom: 0.1rem;
 }
 
@@ -670,19 +734,19 @@ button.danger {
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--c-text-3);
   cursor: pointer;
   margin-bottom: -1px;
 }
 
 .cp-tab:hover {
-  color: #111827;
-  background: #f9fafb;
+  color: var(--c-text);
+  background: var(--c-surface-subtle);
 }
 
 .cp-tab--active {
-  color: #1d4ed8;
-  border-bottom-color: #1d4ed8;
+  color: var(--c-primary);
+  border-bottom-color: var(--c-primary);
   background: none;
 }
 
@@ -743,7 +807,7 @@ button.danger {
   pointer-events: none;
 }
 
-/* Tableau 10 palette tab — 10 columns × 3 rows, reuses .cp-swatch sizing */
+/* Tableau 10 palette tab */
 .cp-tableau {
   display: grid;
   grid-template-columns: repeat(10, 16px);
@@ -775,8 +839,8 @@ button.danger {
 }
 
 .cp-swatch--active {
-  border-color: #111827;
-  box-shadow: 0 0 0 1px #fff inset;
+  border-color: var(--c-text);
+  box-shadow: 0 0 0 1px var(--c-surface) inset;
 }
 
 /* Alpha slider */
@@ -789,7 +853,7 @@ button.danger {
 .cp-alpha-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--c-text-3);
   width: 0.9rem;
   flex-shrink: 0;
   text-align: center;
@@ -819,7 +883,7 @@ button.danger {
 
 .cp-alpha-pct {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--c-text-3);
   width: 2.4rem;
   text-align: right;
   flex-shrink: 0;
@@ -837,7 +901,7 @@ button.danger {
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--c-border);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -854,14 +918,16 @@ button.danger {
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.85rem;
   padding: 0.28rem 0.45rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 5px;
   text-transform: uppercase;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .config-series-label {
   font-size: 0.88rem;
-  color: #111827;
+  color: var(--c-text);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -870,7 +936,7 @@ button.danger {
 
 .config-series-empty {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--c-text-4);
   margin: 0.4rem 0 0;
 }
 
@@ -891,7 +957,7 @@ button.danger {
 
 .config-axis-hint {
   font-size: 0.72rem;
-  color: #9ca3af;
+  color: var(--c-text-4);
   white-space: nowrap;
   align-self: flex-end;
   padding-bottom: 0.3rem;
@@ -900,7 +966,7 @@ button.danger {
 .config-axis-name {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--c-text-3);
   width: 1rem;
   flex-shrink: 0;
   padding-bottom: 0.45rem;
@@ -916,7 +982,7 @@ button.danger {
   width: 100%;
 }
 
-/* uPlot legend alignment and live value font */
+/* ── uPlot legend ─────────────────────────────────────────────────────────── */
 .u-legend th,
 .u-legend td {
   vertical-align: baseline;
@@ -944,24 +1010,28 @@ button.danger {
   vertical-align: baseline;
 }
 
+/* ── Config inputs ────────────────────────────────────────────────────────── */
 .config-select {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 6px;
   padding: 0.4rem 0.5rem;
   font: inherit;
-  background: #fff;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .config-number-input {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 6px;
   padding: 0.4rem 0.5rem;
   font: inherit;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
-/* Mode toggle button — sits at the right end of the DashboardActions bar */
+/* ── Mode toggle ──────────────────────────────────────────────────────────── */
 .mode-toggle {
   margin-left: auto;
   padding: 0.35rem 0.85rem;
@@ -969,26 +1039,26 @@ button.danger {
   font-size: 0.82rem;
   font-weight: 600;
   background: transparent;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  color: var(--c-text-3);
+  border: 1px solid var(--c-border);
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
 .mode-toggle:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #374151;
+  background: var(--c-surface-hover);
+  border-color: var(--c-text-4);
+  color: var(--c-text-2);
 }
 
 .mode-toggle.active {
-  background: #1d4ed8;
+  background: var(--c-primary);
   color: #fff;
-  border-color: #1d4ed8;
+  border-color: var(--c-primary);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* File menu dropdown */
+/* ── File menu dropdown ───────────────────────────────────────────────────── */
 .file-menu {
   position: relative;
   display: inline-flex;
@@ -998,10 +1068,10 @@ button.danger {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   min-width: 130px;
   z-index: 300;
   display: flex;
@@ -1021,7 +1091,7 @@ button.danger {
 }
 
 .file-menu__panel button:hover {
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
 }
 
 /* ── Burger menu ──────────────────────────────────────────────────────────── */
@@ -1040,10 +1110,10 @@ button.danger {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   min-width: 150px;
   z-index: 300;
   display: flex;
@@ -1056,6 +1126,7 @@ button.danger {
   text-align: left;
   border: none;
   background: none;
+  color: var(--c-text);
   padding: 0.4rem 0.85rem;
   font-size: 0.875rem;
   cursor: pointer;
@@ -1063,23 +1134,23 @@ button.danger {
 }
 
 .burger-panel button:hover {
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
 }
 
 /* ── About dialog ─────────────────────────────────────────────────────────── */
 .about-dialog p {
   margin: 0.25rem 0;
-  color: #374151;
+  color: var(--c-text-2);
   font-size: 0.9rem;
 }
 
 .about-version {
-  color: #6b7280 !important;
+  color: var(--c-text-3) !important;
   font-size: 0.8rem !important;
   margin-top: 0.6rem !important;
 }
 
-/* ── Tab action buttons (New / Open after tabs) ───────────────────────────── */
+/* ── Tab action buttons ───────────────────────────────────────────────────── */
 .tab-action-btn {
   align-self: center;
   border: 1px solid transparent;
@@ -1088,34 +1159,34 @@ button.danger {
   padding: 0.2rem 0.45rem;
   font-size: 0.9rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--c-text-3);
   line-height: 1;
   margin-left: 2px;
 }
 
 .tab-action-btn:hover {
-  background: #f3f4f6;
-  color: #111827;
-  border-color: #d1d5db;
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+  border-color: var(--c-border);
 }
 
 .tab-action-btn--primary {
-  color: #2563eb;
-  border-color: #bfdbfe;
+  color: var(--c-primary);
+  border-color: var(--c-primary-border);
   margin-left: 6px;
 }
 
 .tab-action-btn--primary:hover {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #93c5fd;
+  background: var(--c-primary-bg);
+  color: var(--c-primary);
+  border-color: var(--c-primary-2);
 }
 
-/* ── Series style button (line preview in series row) ─────────────────────── */
+/* ── Series style button ──────────────────────────────────────────────────── */
 .series-style-btn {
   width: 2rem;
   height: 1.6rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--c-border);
   border-radius: 4px;
   cursor: pointer;
   flex-shrink: 0;
@@ -1127,10 +1198,10 @@ button.danger {
 }
 
 .series-style-btn:hover {
-  border-color: #6b7280;
+  border-color: var(--c-text-3);
 }
 
-/* ── SeriesStylePicker component (sp-*) ───────────────────────────────────── */
+/* ── SeriesStylePicker (sp-*) ─────────────────────────────────────────────── */
 .sp {
   width: 186px;
   display: flex;
@@ -1148,7 +1219,7 @@ button.danger {
 .sp-label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--c-text-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1156,14 +1227,14 @@ button.danger {
 .sp-slider {
   width: 100%;
   cursor: pointer;
-  accent-color: #1d4ed8;
+  accent-color: var(--c-primary);
 }
 
 .sp-slider-ticks {
   display: flex;
   justify-content: space-between;
   font-size: 0.68rem;
-  color: #9ca3af;
+  color: var(--c-text-4);
   padding: 0 2px;
 }
 
@@ -1171,22 +1242,62 @@ button.danger {
   width: 100%;
   font-size: 0.8rem;
   padding: 0.25rem 0.4rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--c-border);
   border-radius: 4px;
-  background: #fff;
+  background: var(--c-surface);
+  color: var(--c-text);
   cursor: pointer;
 }
 
 .sp-select:focus {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--c-primary-2);
   outline-offset: 1px;
   border-color: transparent;
 }
 
 .sp-preview {
   display: block;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border-subtle);
   border-radius: 4px;
-  background: #f9fafb;
+  background: var(--c-surface-subtle);
   padding: 2px 0;
+}
+
+/* ── Settings dialog inputs ───────────────────────────────────────────────── */
+.settings-dialog input[type="number"],
+.settings-dialog select {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  padding: 0.25rem 0.4rem;
+}
+
+/* ── Tab save / delete ────────────────────────────────────────────────────── */
+.tab-dragging {
+  opacity: 0.4;
+}
+
+.tab-drag-over {
+  border-color: var(--c-primary-2) !important;
+  background: var(--c-primary-bg) !important;
+}
+
+/* ── Settings fields ──────────────────────────────────────────────────────── */
+.settings-dialog,
+.settings-field {
+  color: var(--c-text);
+}
+
+.settings-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-field--checkbox {
+  justify-content: flex-start;
+  gap: 0.5rem;
 }
