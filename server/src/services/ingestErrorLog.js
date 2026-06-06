@@ -16,11 +16,12 @@ class IngestErrorLog {
 
   /**
    * Record a new ingest error.
-   * @param {string} source  - Human-readable source label, e.g. "MQTT", "HTTP", "Generator:my-gen"
-   * @param {string} message - Error description
+   * @param {string}      source  - Human-readable source label, e.g. "MQTT", "HTTP", "Generator:my-gen"
+   * @param {string}      message - Error description
+   * @param {string|null} [payload] - Raw received message, if applicable
    */
-  record(source, message) {
-    this._errors.push({ ts: Date.now(), source, message });
+  record(source, message, payload = null) {
+    this._errors.push({ ts: Date.now(), source, message, ...(payload != null ? { payload } : {}) });
     if (this._errors.length > MAX_ERRORS) {
       this._errors.shift();
     }

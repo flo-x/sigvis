@@ -24,7 +24,7 @@ const DEFAULT_INGEST_TOPIC = "cmnd/visualizer/ingest";
  *   MQTT_INGEST_TOPIC   — topic to subscribe to (default: cmnd/visualizer/ingest)
  */
 class MqttIngestionService {
-  constructor({ seriesStore, ingestErrorLog, brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "" }) {
+  constructor({ seriesStore, ingestErrorLog, brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "", debugMode = false }) {
     this._seriesStore = seriesStore;
     this._ingestErrorLog = ingestErrorLog || null;
     this._brokerUrl = brokerUrl;
@@ -32,6 +32,7 @@ class MqttIngestionService {
     this._username = username;
     this._password = password;
     this._ingestTopic = ingestTopic || DEFAULT_INGEST_TOPIC;
+    this._debugMode = Boolean(debugMode);
     this._client = null;
     /** "disconnected" | "connecting" | "connected" | "error" */
     this._status = "disconnected";
@@ -48,22 +49,29 @@ class MqttIngestionService {
       clientId: this._clientId,
       username: this._username,
       ingestTopic: this._ingestTopic,
+      debugMode: this._debugMode,
       status: this._status,
       lastError: this._lastError
     };
+  }
+
+  /** Enable or disable debug logging without reconfiguring the connection. */
+  setDebugMode(enabled) {
+    this._debugMode = Boolean(enabled);
   }
 
   /**
    * Apply new settings and reconnect.
    * Passing an empty brokerUrl disables MQTT.
    */
-  reconfigure({ brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "" }) {
+  reconfigure({ brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "", debugMode }) {
     this.stop();
     this._brokerUrl = brokerUrl.trim();
     this._clientId = clientId.trim() || _randomClientId();
     this._username = username;
     this._password = password;
     this._ingestTopic = ingestTopic.trim() || DEFAULT_INGEST_TOPIC;
+    if (debugMode !== undefined) this._debugMode = Boolean(debugMode);
     this._lastError = "";
     if (this._brokerUrl) {
       this.start();
@@ -110,17 +118,23 @@ class MqttIngestionService {
     this._client.on("message", (topic, payloadBuffer) => {
       if (!own() || topic !== ingestTopic) return;
 
+      const raw = payloadBuffer.toString();
+
+      if (this._debugMode) {
+        this._ingestErrorLog?.record("MQTT Debug", raw.length > 300 ? raw.slice(0, 300) + "…" : raw);
+      }
+
       let body;
       try {
         body = JSON.parse(payloadBuffer.toString());
       } catch {
-        this._ingestErrorLog?.record("MQTT", "Received non-JSON message — ignored.");
+        this._ingestErrorLog?.record("MQTT", "Received non-JSON message — ignored.", raw);
         return;
       }
 
       const parsed = parseIngestPayload(body);
       if (!parsed.ok) {
-        this._ingestErrorLog?.record("MQTT", `Invalid ingest payload: ${parsed.error}`);
+        this._ingestErrorLog?.record("MQTT", `Invalid ingest payload: ${parsed.error}`, raw);
         return;
       }
 
@@ -137,7 +151,7 @@ class MqttIngestionService {
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        this._ingestErrorLog?.record("MQTT", `Store error for "${measurementName}": ${msg}`);
+        this._ingestErrorLog?.record("MQTT", `Store error for "${measurementName}": ${msg}`, raw);
         console.error(`[MQTT] Store error for measurement "${measurementName}":`, msg);
       }
     });

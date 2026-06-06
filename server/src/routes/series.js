@@ -59,7 +59,7 @@ function createSeriesRouter({ seriesStore, ingestErrorLog }) {
       result = seriesStore.ingestMeasurementPoints(measurementName, normalizedTs, normalizedSeries);
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Invalid ingest payload.";
-      ingestErrorLog?.record("HTTP", `Store error for "${measurementName}": ${msg}`);
+      ingestErrorLog?.record("HTTP", `Store error for "${measurementName}": ${msg}`, JSON.stringify(req.body));
       return res.status(400).json({ error: msg });
     }
 

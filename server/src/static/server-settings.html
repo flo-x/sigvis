@@ -168,6 +168,12 @@
       <label for="mqttIngestTopic">Ingest topic</label>
       <input id="mqttIngestTopic" type="text" placeholder="cmnd/visualizer/ingest" />
     </div>
+    <div class="field" style="flex-direction:row;align-items:center;gap:0.5rem">
+      <input id="mqttDebugMode" type="checkbox" style="width:auto;margin:0" />
+      <label for="mqttDebugMode" style="margin:0;font-weight:normal">
+        Debug mode — log every received message in the Ingest Log
+      </label>
+    </div>
     <p style="font-size:0.78rem;color:#6b7280;margin:0 0 0.75rem">
       Clear Broker URL to disable MQTT. Leave topic blank to use the default.
     </p>
@@ -184,6 +190,7 @@
     </div>
     <p style="font-size:0.82rem;color:#6b7280;margin:0 0 0.5rem">
       Recent errors from all ingestion paths: HTTP API, MQTT, generators, and processors.
+      When MQTT debug mode is enabled, every received message is also logged here (source: <em>MQTT Debug</em>).
       Capped at the 50 most recent entries.
     </p>
     <div class="ingest-errors-wrap">
@@ -739,10 +746,16 @@ ingest({
       }
       tbody.innerHTML = errors.slice().reverse().map((e) => {
         const t = new Date(e.ts).toLocaleTimeString();
+        const payloadHtml = e.payload != null
+          ? `<details style="margin-top:0.25rem">
+               <summary style="cursor:pointer;font-size:0.75rem;color:#6b7280">Received message</summary>
+               <pre style="margin:0.25rem 0 0;font-size:0.72rem;white-space:pre-wrap;word-break:break-all;background:#f9fafb;border:1px solid #e5e7eb;border-radius:3px;padding:0.3rem 0.4rem;max-height:8rem;overflow-y:auto">${esc(e.payload)}</pre>
+             </details>`
+          : "";
         return `<tr>
           <td class="ie-time">${esc(t)}</td>
           <td class="ie-source">${esc(e.source)}</td>
-          <td class="ie-message">${esc(e.message)}</td>
+          <td class="ie-message">${esc(e.message)}${payloadHtml}</td>
         </tr>`;
       }).join("");
     }
@@ -801,6 +814,7 @@ ingest({
       document.getElementById("mqttClientId").value    = m.clientId    || "";
       document.getElementById("mqttUsername").value    = m.username    || "";
       document.getElementById("mqttIngestTopic").value = m.ingestTopic || "";
+      document.getElementById("mqttDebugMode").checked = Boolean(m.debugMode);
       applyMqttStatus(m);
       if (m.status === "connecting") startPoll();
     }
@@ -849,7 +863,8 @@ ingest({
             clientId:    document.getElementById("mqttClientId").value.trim(),
             username:    document.getElementById("mqttUsername").value,
             password:    document.getElementById("mqttPassword").value,
-            ingestTopic: document.getElementById("mqttIngestTopic").value.trim()
+            ingestTopic: document.getElementById("mqttIngestTopic").value.trim(),
+            debugMode:   document.getElementById("mqttDebugMode").checked
           }
         };
         const r = await fetch("/api/admin/config", {
@@ -865,6 +880,7 @@ ingest({
         document.getElementById("mqttUsername").value    = m.username    || "";
         document.getElementById("mqttPassword").value    = "";
         document.getElementById("mqttIngestTopic").value = m.ingestTopic || "";
+        document.getElementById("mqttDebugMode").checked = Boolean(m.debugMode);
         applyMqttStatus(m);
         if (m.brokerUrl) {
           setMsg(msg, "Saved — waiting for broker…", false);

@@ -37,15 +37,16 @@ function createAdminRouter({ subscriptionManager, mqttService, generatorService,
     }
 
     if (req.body?.mqtt !== undefined) {
-      const { brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "" } = req.body.mqtt;
-      mqttService.reconfigure({ brokerUrl, clientId, username, password, ingestTopic });
+      const { brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "", debugMode } = req.body.mqtt;
+      mqttService.reconfigure({ brokerUrl, clientId, username, password, ingestTopic, debugMode });
       // Persist public fields; only overwrite saved password if a new one was submitted.
       const mqttCfg = mqttService.getConfig();
       const mqttPatch = {
         brokerUrl:   mqttCfg.brokerUrl,
         clientId:    mqttCfg.clientId,
         username:    mqttCfg.username,
-        ingestTopic: mqttCfg.ingestTopic
+        ingestTopic: mqttCfg.ingestTopic,
+        debugMode:   mqttCfg.debugMode
       };
       if (password) mqttPatch.password = password;
       settingsPatch.mqtt = mqttPatch;
