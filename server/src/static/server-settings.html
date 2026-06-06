@@ -278,7 +278,7 @@
           <tr>
             <td>setIntervalMs(ms)</td>
             <td>function</td>
-            <td>Change the generator's firing rate at runtime (minimum 100 ms). <strong>Non-persistent</strong> — the configured interval is restored on the next save or server restart.</td>
+            <td>Change the generator's firing rate at runtime (minimum 30 ms). <strong>Non-persistent</strong> — the configured interval is restored on the next save or server restart.</td>
           </tr>
           <tr>
             <td>require(moduleName)</td>
@@ -377,10 +377,10 @@ ingest({
         <label for="genFormEnabled" style="font-size:0.88rem;font-weight:500;color:#111827;margin:0">Enabled</label>
       </div>
       <div class="field">
-        <label for="genFormInterval">Interval (ms) <span class="field-label-sub">minimum 100</span>
+        <label for="genFormInterval">Interval (ms) <span class="field-label-sub">minimum 30</span>
           <button type="button" class="param-help-btn" data-help="The generator fires every this many milliseconds. Each firing can produce any number of data points — the script can call ingest() multiple times or pass an array of timestamps — making it easy to generate a dense, evenly-spaced waveform even with a slow firing rate." title="Help">?</button>
         </label>
-        <input id="genFormInterval" type="number" min="100" step="100" value="1000" style="max-width:9rem" />
+        <input id="genFormInterval" type="number" min="30" step="10" value="1000" style="max-width:9rem" />
       </div>
       <!-- Prebuilt section -->
       <div id="genPrebuiltSection" class="prebuilt-section">

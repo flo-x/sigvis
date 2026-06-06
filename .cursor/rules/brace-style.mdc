@@ -1,0 +1,23 @@
+---
+description: Always use braces for if/else/for/while bodies
+globs: **/*.js,**/*.ts,**/*.vue
+alwaysApply: false
+---
+
+# Brace Style
+
+Always use curly braces for control-flow bodies, even when the body is a single statement.
+
+```js
+// ❌ BAD
+if (condition) doSomething();
+if (condition)
+  doSomething();
+
+// ✅ GOOD
+if (condition) {
+  doSomething();
+}
+```
+
+Applies to `if`, `else`, `else if`, `for`, `while`, and `do…while`.

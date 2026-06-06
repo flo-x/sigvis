@@ -10,7 +10,7 @@ const { CATALOG } = require("../prebuilts/index");
 const { compileScript, runScript, buildSandbox } = require("../lib/scriptSandbox");
 
 const GENERATORS_FILE = "generators.json";
-const MIN_INTERVAL_MS = 100;
+const MIN_INTERVAL_MS = 30;
 
 // Modules accessible via require() inside custom generator scripts.
 const MODULE_REGISTRY = new Map([["dsp", dspLib]]);
@@ -347,7 +347,9 @@ class GeneratorService {
     function ingest(payload) {
       try {
         const parsed = parseIngestPayload(payload);
-        if (!parsed.ok) throw new Error(`ingest() validation failed: ${parsed.error}`);
+        if (!parsed.ok) {
+          throw new Error(`ingest() validation failed: ${parsed.error}`);
+        }
         const { measurementName, clearMeasurement, time, normalizedTs, normalizedSeries } = parsed;
         if (clearMeasurement) store.clearMeasurementData(measurementName);
         store.setMeasurementTimeFlag(measurementName, time);

@@ -121,7 +121,7 @@ module.exports = {
       type:    "number",
       default: 0,
       min:     0,
-      help:    "Maximum random displacement (±) added to each sample's timestamp in milliseconds.\n0 = perfectly regular sampling.\nWarning: values larger than the step interval (1000 / sampleHz ms) can cause out-of-order timestamps."
+      help:    "Maximum random displacement (±) added to each sample's timestamp in milliseconds.\n0 = perfectly regular sampling.\nThe jitter is automatically clamped to ¼ of the sample period (stepMs / 4) to guarantee timestamps remain strictly increasing."
     },
     {
       name:    "phaseJitterRad",
@@ -198,9 +198,11 @@ module.exports = {
       // Additive noise.
       const noise = noiseAmp > 0 ? (Math.random() * 2 - 1) * noiseAmp : 0;
 
-      // Timestamp jitter.
-      const jitteredTs = tsJitterMs > 0
-        ? ts + (Math.random() * 2 - 1) * tsJitterMs
+      // Timestamp jitter — clamped to ¼ of the step so adjacent samples can
+      // never swap order (worst-case gap = stepMs − 2×effectiveJitter = stepMs/2).
+      const effectiveJitterMs = Math.min(tsJitterMs, state.stepMs / 4);
+      const jitteredTs = effectiveJitterMs > 0
+        ? ts + (Math.random() * 2 - 1) * effectiveJitterMs
         : ts;
 
       timestamps.push(jitteredTs);
@@ -208,7 +210,9 @@ module.exports = {
       ts += state.stepMs;
     }
 
-    if (timestamps.length === 0) return;
+    if (timestamps.length === 0) {
+      return;
+    }
 
     // Advance bookmark using the un-jittered ts so spacing stays regular.
     state.nextTs = ts - state.stepMs;

@@ -212,7 +212,9 @@ module.exports = {
 
     api.ingest({
       measurementName: outMeas,
+      clearMeasurement: true,
       time: false,
       points: { timestamps: frequencies, series: { [outSeries]: magnitudes } }
-    });  }
+    });
+  }
 };
