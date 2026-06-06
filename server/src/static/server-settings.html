@@ -964,6 +964,20 @@ ingest({
             </tr>`;
         }
 
+        if (p.type === "select" && Array.isArray(p.options)) {
+          const opts = p.options.map((o) =>
+            `<option value="${esc(String(o))}" ${String(o) === String(config && config[p.name] !== undefined ? config[p.name] : p.default ?? "") ? "selected" : ""}>${esc(String(o))}</option>`
+          ).join("");
+          return `
+            <tr>
+              <td class="config-label"><label for="cfg_${esc(p.name)}">${esc(p.label)}${help}</label></td>
+              <td class="config-value">
+                <select id="cfg_${esc(p.name)}" name="${esc(p.name)}">${opts}</select>
+                ${err}
+              </td>
+            </tr>`;
+        }
+
         return `
           <tr>
             <td class="config-label"><label for="cfg_${esc(p.name)}">${esc(p.label)}${help}</label></td>
@@ -1009,6 +1023,9 @@ ingest({
       const config = {};
       container.querySelectorAll("input[name]").forEach((inp) => {
         config[inp.name] = inp.type === "number" ? (inp.value === "" ? "" : Number(inp.value)) : inp.value;
+      });
+      container.querySelectorAll("select[name]").forEach((sel) => {
+        config[sel.name] = sel.value;
       });
       return config;
     }

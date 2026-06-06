@@ -26,6 +26,7 @@ const CATALOG_ARRAY = [
   require("./sine-generator"),
   require("./ema-processor"),
   require("./median-processor"),
+  require("./spectrum-processor"),
 ];
 
 /** Map<id, PrebuiltDef> */
