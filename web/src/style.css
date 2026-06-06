@@ -41,12 +41,17 @@ button.danger {
   color: #ef4444;
 }
 
-.dashboard-tabs {
+.tab-bar {
   display: flex;
+  align-items: flex-end;
+  margin-bottom: 0.8rem;
+}
+
+.dashboard-tabs {
   gap: 0;
   flex-wrap: wrap;
+  flex: 1;
   border-bottom: 2px solid #d1d5db;
-  margin-bottom: 0.8rem;
 }
 
 .dashboard-tabs .tab {
@@ -91,6 +96,23 @@ button.danger {
   font-weight: 700;
 }
 
+.tab-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  border-radius: 3px;
+  color: #f59e0b;
+  cursor: pointer;
+  line-height: 1;
+}
+.tab-save-btn:hover {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .tab-rename-input {
   font: inherit;
   font-size: 0.875rem;
@@ -116,8 +138,10 @@ button.danger {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 0.8rem;
+  flex-shrink: 0;
+  padding: 0 0.5rem 0.4rem;
+  border-bottom: 2px solid #d1d5db;
+  margin-bottom: 0;
 }
 
 .runtime-setting {
@@ -205,6 +229,21 @@ button.danger {
 .widget-title small {
   font-size: 0.72rem;
   color: #6b7280;
+}
+
+.widget-remove-btn {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0 3px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.widget-remove-btn:hover {
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
 .widget-body {
@@ -983,6 +1022,93 @@ button.danger {
 
 .file-menu__panel button:hover {
   background: #f3f4f6;
+}
+
+/* ── Burger menu ──────────────────────────────────────────────────────────── */
+.burger-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.burger-btn {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.25rem 0.45rem;
+}
+
+.burger-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-width: 150px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+}
+
+.burger-panel button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.burger-panel button:hover {
+  background: #f3f4f6;
+}
+
+/* ── About dialog ─────────────────────────────────────────────────────────── */
+.about-dialog p {
+  margin: 0.25rem 0;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.about-version {
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+  margin-top: 0.6rem !important;
+}
+
+/* ── Tab action buttons (New / Open after tabs) ───────────────────────────── */
+.tab-action-btn {
+  align-self: center;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 5px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+.tab-action-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.tab-action-btn--primary {
+  color: #2563eb;
+  border-color: #bfdbfe;
+  margin-left: 6px;
+}
+
+.tab-action-btn--primary:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
 }
 
 /* ── Series style button (line preview in series row) ─────────────────────── */

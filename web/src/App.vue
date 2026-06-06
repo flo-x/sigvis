@@ -119,6 +119,28 @@ async function runSave({ forcePrompt }) {
   }
 }
 
+async function saveTabDashboard(dashboardId) {
+  const dashboard = state.dashboards.find((d) => d.id === dashboardId);
+  if (!dashboard) return;
+
+  let targetName = dashboard.name;
+  if (!targetName) {
+    targetName = await showSaveAsDialog(dashboard.name);
+  }
+  if (!targetName) return;
+
+  try {
+    actionError.value = "";
+    await saveDashboard(
+      targetName,
+      serializeDashboard(dashboard, { runtimeSettings })
+    );
+    applySavedName(dashboard.id, targetName);
+  } catch (err) {
+    actionError.value = err instanceof Error ? err.message : "Save failed.";
+  }
+}
+
 async function onOpenClick() {
   try {
     actionError.value = "";
@@ -162,27 +184,26 @@ watch(
 
 <template>
   <main class="app-shell">
-    <DashboardActions
-      :is-edit-mode="isEditMode"
-      @create-dashboard="onCreateDashboard"
-      @save="runSave({ forcePrompt: false })"
-      @save-as="runSave({ forcePrompt: true })"
-      @open="onOpenClick"
-      @open-settings="showSettingsDialog = true"
-      @add-widget="createWidget('dataSeries')"
-      @toggle-edit-mode="isEditMode = !isEditMode"
-    />
-
-    <DashboardTabs
-      :dashboards="state.dashboards"
-      :active-dashboard-id="state.activeDashboardId"
-      :is-edit-mode="isEditMode"
-      @select="switchDashboard"
-      @create="onCreateDashboard"
-      @delete="onDeleteDashboard"
-      @rename="renameDashboard"
-      @reorder="reorderDashboards"
-    />
+    <div class="tab-bar">
+      <DashboardTabs
+        :dashboards="state.dashboards"
+        :active-dashboard-id="state.activeDashboardId"
+        :is-edit-mode="isEditMode"
+        @select="switchDashboard"
+        @create="onCreateDashboard"
+        @delete="onDeleteDashboard"
+        @rename="renameDashboard"
+        @reorder="reorderDashboards"
+        @save="saveTabDashboard"
+        @open="onOpenClick"
+        @add-widget="createWidget('dataSeries')"
+      />
+      <DashboardActions
+        :is-edit-mode="isEditMode"
+        @open-settings="showSettingsDialog = true"
+        @toggle-edit-mode="isEditMode = !isEditMode"
+      />
+    </div>
 
     <p v-if="actionError" class="action-error">{{ actionError }}</p>
 

@@ -51,7 +51,13 @@ function onToggleLiveMode() {
           Live
         </button>
         <button v-if="isEditMode && canConfigure" type="button" @click="onConfigureClick">Configure</button>
-        <button v-if="isEditMode" class="danger" type="button" @click="emit('remove', widget.id)">Remove</button>
+        <button
+          v-if="isEditMode"
+          class="widget-remove-btn"
+          type="button"
+          title="Remove widget"
+          @click="emit('remove', widget.id)"
+        >✕</button>
       </div>
     </div>
     <div class="widget-body">

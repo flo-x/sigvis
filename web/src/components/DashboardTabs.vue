@@ -16,7 +16,7 @@ defineProps({
   }
 });
 
-const emit = defineEmits(["select", "create", "delete", "rename", "reorder"]);
+const emit = defineEmits(["select", "create", "delete", "rename", "reorder", "save", "open", "add-widget"]);
 
 // --- Rename ---
 const editingTabId = ref(null);
@@ -117,10 +117,27 @@ function onDrop(event, dashboard) {
         />
         <template v-else>
           <span>{{ dashboard.name || "Untitled Dashboard" }}</span>
-          <span v-if="dashboard.isDirty" class="dirty-dot">*</span>
+          <button
+            v-if="isEditMode && dashboard.isDirty"
+            class="tab-save-btn"
+            :title="`Save '${dashboard.name || 'Untitled Dashboard'}'`"
+            @click.stop="emit('save', dashboard.id)"
+          >
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="3.5" y="1" width="5" height="4.5" rx="0.5" fill="currentColor"/>
+              <rect x="3" y="7.5" width="8" height="4.5" rx="0.5" fill="currentColor"/>
+            </svg>
+          </button>
           <span v-if="isEditMode" class="delete-tab" @click.stop="emit('delete', dashboard.id)">x</span>
         </template>
       </div>
+    </template>
+
+    <template v-if="isEditMode">
+      <button class="tab-action-btn" @click="emit('create')" title="New dashboard">＋</button>
+      <button class="tab-action-btn" @click="emit('open')" title="Open dashboard">📂</button>
+      <button class="tab-action-btn tab-action-btn--primary" @click="emit('add-widget')" title="Add widget">+ Widget</button>
     </template>
   </div>
 </template>

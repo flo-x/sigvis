@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import pkg from "../../../package.json";
 
 defineProps({
   isEditMode: {
@@ -9,53 +10,78 @@ defineProps({
 });
 
 const emit = defineEmits([
-  "create-dashboard",
-  "save",
-  "save-as",
-  "open",
   "open-settings",
-  "add-widget",
   "toggle-edit-mode"
 ]);
 
-const showFileMenu = ref(false);
+// --- Burger menu ---
+const showBurger = ref(false);
+const showAbout  = ref(false);
 
-function toggleFileMenu() {
-  showFileMenu.value = !showFileMenu.value;
+function toggleBurger() {
+  showBurger.value = !showBurger.value;
 }
 
-function closeFileMenu() {
-  showFileMenu.value = false;
+function closeBurger() {
+  showBurger.value = false;
+}
+
+function openServerSettings() {
+  closeBurger();
+  window.open("/server-settings", "_blank");
+}
+
+function openSettings() {
+  closeBurger();
+  emit("open-settings");
+}
+
+function openAbout() {
+  closeBurger();
+  showAbout.value = true;
 }
 
 function onDocClick(e) {
-  const menu = document.querySelector(".file-menu");
+  const menu = document.querySelector(".burger-menu");
   if (menu && !menu.contains(e.target)) {
-    closeFileMenu();
+    closeBurger();
   }
 }
 
-onMounted(() => document.addEventListener("click", onDocClick, true));
-onBeforeUnmount(() => document.removeEventListener("click", onDocClick, true));
+onMounted(()        => document.addEventListener("click", onDocClick, true));
+onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
 </script>
 
 <template>
   <div class="dashboard-actions">
-    <div v-if="isEditMode" class="file-menu">
-      <button @click.stop="toggleFileMenu">Dashboard ▾</button>
-      <div v-show="showFileMenu" class="file-menu__panel">
-        <button @click="emit('create-dashboard'); closeFileMenu()">New</button>
-        <button @click="emit('open'); closeFileMenu()">Open...</button>
-        <button @click="emit('save'); closeFileMenu()">Save</button>
-        <button @click="emit('save-as'); closeFileMenu()">Save As...</button>
-      </div>
-    </div>
-    <button @click="emit('open-settings')">Settings</button>
-    <button v-if="isEditMode" class="primary" @click="emit('add-widget')">+ Data Series Widget</button>
     <button
       class="mode-toggle"
       :class="{ active: isEditMode }"
       @click="emit('toggle-edit-mode')"
     >Edit</button>
+
+    <!-- Burger -->
+    <div class="burger-menu">
+      <button class="burger-btn" @click.stop="toggleBurger" title="Menu">☰</button>
+      <div v-show="showBurger" class="burger-panel">
+        <button @click="openSettings">Settings</button>
+        <button @click="openServerSettings">Server Settings</button>
+        <button @click="openAbout">About</button>
+      </div>
+    </div>
   </div>
+
+  <!-- About dialog (teleported to body) -->
+  <Teleport to="body">
+    <div v-if="showAbout" class="dialog-backdrop" @click.self="showAbout = false">
+      <div class="dialog about-dialog">
+        <h3>Sigvis</h3>
+        <p>Node + Vue time-series dashboard</p>
+        <p class="about-version">Version {{ pkg.version }}</p>
+        <div class="dialog-actions">
+          <button type="button" class="primary" @click="showAbout = false">Close</button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
