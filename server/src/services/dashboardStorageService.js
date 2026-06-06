@@ -27,6 +27,13 @@ class DashboardStorageService {
 
     return this.storageAdapter.saveByName(name, dashboard);
   }
+
+  async deleteDashboard(name) {
+    if (!name || typeof name !== "string") {
+      throw new Error("A non-empty dashboard name is required.");
+    }
+    return this.storageAdapter.deleteByName(name);
+  }
 }
 
 module.exports = {

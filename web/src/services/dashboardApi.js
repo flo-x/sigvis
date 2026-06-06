@@ -24,4 +24,11 @@ async function saveDashboard(name, dashboard) {
   return parseResponse(response);
 }
 
-export { listDashboards, openDashboard, saveDashboard };
+async function deleteDashboard(name) {
+  const response = await fetchNoCache(`/api/dashboards/${encodeURIComponent(name)}`, {
+    method: "DELETE"
+  });
+  return parseResponse(response);
+}
+
+export { listDashboards, openDashboard, saveDashboard, deleteDashboard };

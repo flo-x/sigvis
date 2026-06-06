@@ -4,7 +4,7 @@ import DashboardActions from "./components/DashboardActions.vue";
 import DashboardGrid from "./components/DashboardGrid.vue";
 import DashboardTabs from "./components/DashboardTabs.vue";
 import OpenDashboardDialog from "./components/OpenDashboardDialog.vue";
-import { listDashboards, openDashboard, saveDashboard } from "./services/dashboardApi";
+import { listDashboards, openDashboard, saveDashboard, deleteDashboard as deleteSavedDashboardApi } from "./services/dashboardApi";
 import {
   state,
   ensureInitialDashboard,
@@ -125,9 +125,13 @@ async function saveTabDashboard(dashboardId) {
   const dashboard = state.dashboards.find((d) => d.id === dashboardId);
   if (!dashboard) return;
 
-  let targetName = dashboard.name;
+  let targetName = dashboard.lastSavedName;
   if (!targetName) {
-    targetName = await showSaveAsDialog(dashboard.name);
+    if (dashboard.hasCustomName) {
+      targetName = dashboard.name;
+    } else {
+      targetName = await showSaveAsDialog(dashboard.name);
+    }
   }
   if (!targetName) return;
 
@@ -168,6 +172,16 @@ async function openDashboardByName(name) {
     openDialogVisible.value = false;
   } catch (err) {
     actionError.value = err instanceof Error ? err.message : "Unable to open dashboard.";
+  }
+}
+
+async function deleteSavedDashboard(name) {
+  try {
+    actionError.value = "";
+    await deleteSavedDashboardApi(name);
+    savedDashboards.value = savedDashboards.value.filter((d) => d.name !== name);
+  } catch (err) {
+    actionError.value = err instanceof Error ? err.message : "Unable to delete dashboard.";
   }
 }
 
@@ -265,6 +279,7 @@ watch(
       :items="savedDashboards"
       @close="openDialogVisible = false"
       @open-dashboard="openDashboardByName"
+      @delete-dashboard="deleteSavedDashboard"
     />
 
     <div v-if="showSettingsDialog" class="dialog-backdrop" @click.self="showSettingsDialog = false">

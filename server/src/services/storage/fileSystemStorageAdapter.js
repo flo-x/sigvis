@@ -72,6 +72,12 @@ class FileSystemStorageAdapter {
     await fs.writeFile(target, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
     return payload;
   }
+
+  async deleteByName(name) {
+    await this.ensureDir();
+    const target = path.join(this.baseDir, this.nameToFile(name));
+    await fs.unlink(target);
+  }
 }
 
 module.exports = {

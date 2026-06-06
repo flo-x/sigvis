@@ -37,6 +37,18 @@ function createDashboardRouter({ dashboardStorageService }) {
     }
   });
 
+  router.delete("/:name", async (req, res, next) => {
+    try {
+      await dashboardStorageService.deleteDashboard(req.params.name);
+      res.json({ deleted: req.params.name });
+    } catch (error) {
+      if (error && error.code === "ENOENT") {
+        return res.status(404).json({ error: "Dashboard not found." });
+      }
+      return next(error);
+    }
+  });
+
   return router;
 }
 

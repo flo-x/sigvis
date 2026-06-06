@@ -42,7 +42,8 @@ function createDashboard({ name = "" } = {}) {
     name,
     widgets: [],
     isDirty: false,
-    lastSavedName: name || null
+    lastSavedName: null,
+    hasCustomName: false
   };
   state.dashboards.push(dashboard);
   state.activeDashboardId = dashboard.id;
@@ -177,6 +178,7 @@ function renameDashboard(dashboardId, newName) {
   const dashboard = state.dashboards.find((entry) => entry.id === dashboardId);
   if (!dashboard) return;
   dashboard.name = newName;
+  dashboard.hasCustomName = true;
   dashboard.isDirty = dashboard.lastSavedName !== newName;
 }
 
