@@ -1,6 +1,5 @@
 "use strict";
 
-const path   = require("node:path");
 const express = require("express");
 const { getCatalogMeta } = require("../prebuilts/index");
 
@@ -10,11 +9,6 @@ const { getCatalogMeta } = require("../prebuilts/index");
  */
 function createAdminRouter({ subscriptionManager, mqttService, generatorService, processorService, ingestErrorLog, serverSettings }) {
   const router = express.Router();
-
-  // ── Server-settings UI ────────────────────────────────────────────────────
-  router.get("/server-settings", (_req, res) => {
-    res.sendFile(path.resolve(__dirname, "..", "static", "server-settings.html"));
-  });
 
   // ── Runtime config ────────────────────────────────────────────────────────
   router.get("/api/admin/config", (_req, res) => {
