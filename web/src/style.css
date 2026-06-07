@@ -1976,3 +1976,150 @@ button.danger {
   color: var(--c-text);
 }
 
+/* ── Data Series view ───────────────────────────────────────────────────────── */
+.ds-table-wrap {
+  overflow-x: auto;
+}
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.ds-table th {
+  text-align: left;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ds-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--c-border-subtle);
+  vertical-align: middle;
+}
+.ds-table tr:last-child td {
+  border-bottom: none;
+}
+.ds-table tr:hover td {
+  background: var(--c-surface-hover);
+}
+.ds-col-num {
+  text-align: right;
+  white-space: nowrap;
+  min-width: 5rem;
+}
+.ds-col-editable {
+  text-align: right;
+  white-space: nowrap;
+  width: 7rem;
+  min-width: 7rem;
+}
+.ds-col-threshold {
+  white-space: nowrap;
+  min-width: 8rem;
+}
+.ds-cell-name {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ds-cell-series {
+  line-height: 1.4;
+}
+.ds-series-chip {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0.05rem 0.15rem 0.05rem 0;
+  padding: 0.05rem 0.45rem;
+  background: var(--c-primary-bg);
+  color: var(--c-primary);
+  border: 1px solid var(--c-primary-border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+.ds-threshold-view {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  color: var(--c-text-2);
+}
+.ds-threshold-view:hover {
+  color: var(--c-primary);
+}
+.ds-threshold-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  padding: 0 0.25rem;
+  height: 1.4em;
+  vertical-align: middle;
+}
+.ds-field-view {
+  display: block;
+  width: 100%;
+  text-align: right;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  color: var(--c-text-2);
+}
+.ds-meas-name-link {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  color: var(--c-text);
+}
+.ds-meas-name-link:hover,
+.ds-meas-name-link.active {
+  color: var(--c-primary);
+  text-decoration: underline;
+}
+.ds-preview-row td {
+  background: var(--c-surface-hover);
+  border-top: 1px dashed var(--c-border);
+}
+.ds-preview-wrap {
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid var(--c-border-subtle);
+  border-radius: 0.3rem;
+}
+.ds-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.ds-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--c-surface);
+  padding: 0.2rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ds-preview-table th:first-child {
+  text-align: left;
+}
+.ds-preview-table td {
+  padding: 0.15rem 0.5rem;
+  border-bottom: 1px solid var(--c-border-subtle);
+  white-space: nowrap;
+}
+.ds-preview-table tr:last-child td {
+  border-bottom: none;
+}
+.ds-preview-ts {
+  text-align: left;
+  color: var(--c-text-3);
+}
+.ds-preview-val {
+  text-align: right;
+}
+

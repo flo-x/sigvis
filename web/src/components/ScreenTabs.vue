@@ -1,7 +1,8 @@
 <script setup>
 const SCREEN_TABS = [
   { id: "server-settings", label: "Server Settings" },
-  { id: "generators",      label: "Generators & Processors" }
+  { id: "generators",      label: "Generators & Processors" },
+  { id: "data-series",     label: "Data Series" }
 ];
 
 defineProps({

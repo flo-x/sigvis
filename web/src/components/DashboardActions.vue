@@ -18,6 +18,7 @@ const emit = defineEmits([
   "toggle-edit-mode",
   "open-server-settings",
   "open-generators",
+  "open-data-series",
   "show-dashboards"
 ]);
 
@@ -41,6 +42,11 @@ function openServerSettings() {
 function openGenerators() {
   closeBurger();
   emit("open-generators");
+}
+
+function openDataSeries() {
+  closeBurger();
+  emit("open-data-series");
 }
 
 function showDashboards() {
@@ -86,6 +92,7 @@ onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
         <button @click="openSettings">Settings</button>
         <button @click="openServerSettings">Server Settings</button>
         <button @click="openGenerators">Generators &amp; Processors</button>
+        <button @click="openDataSeries">Data Series</button>
         <button @click="openAbout">About</button>
       </div>
     </div>

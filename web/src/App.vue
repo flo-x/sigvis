@@ -6,6 +6,7 @@ import DashboardTabs from "./components/DashboardTabs.vue";
 import OpenDashboardDialog from "./components/OpenDashboardDialog.vue";
 import ServerSettingsView from "./components/ServerSettingsView.vue";
 import GeneratorsView from "./components/GeneratorsView.vue";
+import DataSeriesView from "./components/DataSeriesView.vue";
 import ScreenTabs from "./components/ScreenTabs.vue";
 import { listDashboards, openDashboard, saveDashboard, deleteDashboard as deleteSavedDashboardApi } from "./services/dashboardApi";
 import {
@@ -266,6 +267,7 @@ watch(
         @toggle-edit-mode="isEditMode = !isEditMode"
         @open-server-settings="currentView = 'server-settings'"
         @open-generators="currentView = 'generators'"
+        @open-data-series="currentView = 'data-series'"
         @show-dashboards="currentView = 'dashboard'"
       />
     </div>
@@ -282,6 +284,7 @@ watch(
         @toggle-edit-mode="isEditMode = !isEditMode"
         @open-server-settings="currentView = 'server-settings'"
         @open-generators="currentView = 'generators'"
+        @open-data-series="currentView = 'data-series'"
         @show-dashboards="currentView = 'dashboard'"
       />
     </div>
@@ -291,6 +294,8 @@ watch(
     <ServerSettingsView v-if="currentView === 'server-settings'" />
 
     <GeneratorsView v-else-if="currentView === 'generators'" />
+
+    <DataSeriesView v-else-if="currentView === 'data-series'" />
 
     <DashboardGrid
       v-else-if="activeDashboard"

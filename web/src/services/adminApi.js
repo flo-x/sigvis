@@ -28,6 +28,47 @@ export async function clearIngestErrors() {
   return parseResponse(await fetch("/api/admin/ingest-errors/clear", { method: "POST" }));
 }
 
+// ── Admin series ──────────────────────────────────────────────────────────────
+
+/** GET /api/admin/series → { defaultThresholdSeconds, defaultMaxPoints, items: [{ measurementName, time, pointCount, thresholdSeconds, maxPoints, dataSeriesNames }] } */
+export async function getAdminSeries() {
+  return parseResponse(await fetchNoCache("/api/admin/series"));
+}
+
+/**
+ * PATCH /api/admin/series/:measurementName
+ * Accepts a partial patch: { thresholdSeconds?, maxPoints? }
+ */
+export async function updateSeriesMeasurement(measurementName, patch) {
+  return parseResponse(await fetch(`/api/admin/series/${encodeURIComponent(measurementName)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch)
+  }));
+}
+
+/** DELETE /api/admin/series/:measurementName — clears all data points */
+export async function clearSeriesMeasurement(measurementName) {
+  const r = await fetch(`/api/admin/series/${encodeURIComponent(measurementName)}`, { method: "DELETE" });
+  if (!r.ok && r.status !== 204) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || "Clear failed.");
+  }
+}
+
+/**
+ * GET /api/series/data — fetch the last N points for every series of a measurement.
+ * Returns the first matching measurement object from the response.
+ */
+export async function getLastPoints(measurementName, seriesNames, points = 100) {
+  const seriesParam = seriesNames
+    .map((s) => `${encodeURIComponent(measurementName)}:${encodeURIComponent(s)}`)
+    .join(",");
+  const url = `/api/series/data?series=${seriesParam}&points=${points}`;
+  const data = await parseResponse(await fetchNoCache(url));
+  return (data.measurements || []).find((m) => m.measurementName === measurementName) || null;
+}
+
 // ── Prebuilts catalog ─────────────────────────────────────────────────────────
 
 /** GET /api/admin/prebuilts → [{ id, displayName, kind, description, paramSchema }] */

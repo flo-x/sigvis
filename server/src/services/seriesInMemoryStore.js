@@ -1,13 +1,15 @@
 "use strict";
-// For time=false series, keep points within this many x-units of the latest value.
-const NON_TIME_RETENTION_WINDOW = 100_000;
+
+const DEFAULT_MAX_POINTS = 50_000;
 
 class SeriesInMemoryStore {
-  constructor({ defaultThresholdSeconds = 600 } = {}) {
+  constructor({ defaultThresholdSeconds = 600, defaultMaxPoints = DEFAULT_MAX_POINTS } = {}) {
     this.defaultThresholdSeconds = defaultThresholdSeconds;
+    this.defaultMaxPoints        = defaultMaxPoints;
     // Map<measurementName, { timestamps: number[], dataByName: Map<dataName, number[]> }>
-    this.measurementsByName = new Map();
+    this.measurementsByName    = new Map();
     this.thresholdSecondsByName = new Map();
+    this.maxPointsByName        = new Map();
     // Map<measurementName, boolean> — whether x-axis values are Unix timestamps (true) or raw numbers (false)
     this.timeFlagByName = new Map();
     this._onUpdate = null;
@@ -24,8 +26,16 @@ class SeriesInMemoryStore {
     return this.defaultThresholdSeconds;
   }
 
+  getDefaultMaxPoints() {
+    return this.defaultMaxPoints;
+  }
+
   getThresholdSeconds(measurementName) {
     return this.thresholdSecondsByName.get(measurementName) ?? this.defaultThresholdSeconds;
+  }
+
+  getMaxPoints(measurementName) {
+    return this.maxPointsByName.get(measurementName) ?? this.defaultMaxPoints;
   }
 
   getMeasurementTimeFlag(measurementName) {
@@ -38,6 +48,11 @@ class SeriesInMemoryStore {
 
   setThresholdSeconds(measurementName, thresholdSeconds) {
     this.thresholdSecondsByName.set(measurementName, thresholdSeconds);
+    this.pruneMeasurement(measurementName, Date.now());
+  }
+
+  setMaxPoints(measurementName, maxPoints) {
+    this.maxPointsByName.set(measurementName, maxPoints);
     this.pruneMeasurement(measurementName, Date.now());
   }
 
@@ -131,11 +146,10 @@ class SeriesInMemoryStore {
       return;
     }
 
-    // When time=false the stored values are not Unix ms timestamps.
-    // Apply a window of 100 000 units below the current maximum x-value instead.
-    if (!this.getMeasurementTimeFlag(measurementName)) {
-      const lastX = measurement.timestamps[measurement.timestamps.length - 1];
-      const cutoff = lastX - NON_TIME_RETENTION_WINDOW;
+    // Time series: prune by age first (numeric series skip this step).
+    if (this.getMeasurementTimeFlag(measurementName)) {
+      const thresholdMs = this.getThresholdSeconds(measurementName) * 1000;
+      const cutoff = nowMs - thresholdMs;
       let firstFreshIdx = 0;
       while (firstFreshIdx < measurement.timestamps.length && measurement.timestamps[firstFreshIdx] < cutoff) {
         firstFreshIdx += 1;
@@ -146,20 +160,15 @@ class SeriesInMemoryStore {
           values.splice(0, firstFreshIdx);
         }
       }
-      return;
     }
 
-    const thresholdMs = this.getThresholdSeconds(measurementName) * 1000;
-    const cutoff = nowMs - thresholdMs;
-
-    let firstFreshIdx = 0;
-    while (firstFreshIdx < measurement.timestamps.length && measurement.timestamps[firstFreshIdx] < cutoff) {
-      firstFreshIdx += 1;
-    }
-    if (firstFreshIdx > 0) {
-      measurement.timestamps.splice(0, firstFreshIdx);
+    // Both time and numeric series: cap at maxPoints (drop oldest first).
+    const maxPts = this.getMaxPoints(measurementName);
+    const excess = measurement.timestamps.length - maxPts;
+    if (excess > 0) {
+      measurement.timestamps.splice(0, excess);
       for (const values of measurement.dataByName.values()) {
-        values.splice(0, firstFreshIdx);
+        values.splice(0, excess);
       }
     }
   }
@@ -281,17 +290,18 @@ class SeriesInMemoryStore {
 
   /**
    * Returns admin state per measurement.
-   * @returns {{ measurementName: string, thresholdSeconds: number, pointCount: number, dataSeriesNames: string[] }[]}
+   * @returns {{ measurementName: string, time: boolean, thresholdSeconds: number, maxPoints: number, pointCount: number, dataSeriesNames: string[] }[]}
    */
   listMeasurementsAdminState() {
     return this.listMeasurementNames().map((measurementName) => {
       const measurement = this.measurementsByName.get(measurementName);
       return {
         measurementName,
+        time:             this.getMeasurementTimeFlag(measurementName),
         thresholdSeconds: this.getThresholdSeconds(measurementName),
-        time: this.getMeasurementTimeFlag(measurementName),
-        pointCount: measurement ? measurement.timestamps.length : 0,
-        dataSeriesNames: measurement ? Array.from(measurement.dataByName.keys()) : []
+        maxPoints:        this.getMaxPoints(measurementName),
+        pointCount:       measurement ? measurement.timestamps.length : 0,
+        dataSeriesNames:  measurement ? Array.from(measurement.dataByName.keys()) : []
       };
     });
   }
