@@ -92,6 +92,15 @@ function createAdminRouter({ subscriptionManager, mqttService, generatorService,
     res.json({ paused: false });
   });
 
+  router.post("/api/admin/generators/reorder", (req, res) => {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "'ids' must be an array." });
+    }
+    generatorService.reorder(ids);
+    res.json({ ok: true });
+  });
+
   router.get("/api/admin/generators/:id", (req, res) => {
     const record = generatorService.get(req.params.id);
     if (!record) return res.status(404).json({ error: "Generator not found." });
@@ -125,6 +134,15 @@ function createAdminRouter({ subscriptionManager, mqttService, generatorService,
   // ── Processors ────────────────────────────────────────────────────────────
   router.get("/api/admin/processors", (_req, res) => {
     res.json(processorService.list());
+  });
+
+  router.post("/api/admin/processors/reorder", (req, res) => {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "'ids' must be an array." });
+    }
+    processorService.reorder(ids);
+    res.json({ ok: true });
   });
 
   router.get("/api/admin/processors/:id", (req, res) => {

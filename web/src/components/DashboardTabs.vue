@@ -8,7 +8,7 @@ defineProps({
   },
   activeDashboardId: {
     type: String,
-    required: true
+    default: null
   },
   isEditMode: {
     type: Boolean,

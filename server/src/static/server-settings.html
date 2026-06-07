@@ -166,7 +166,7 @@
     </div>
     <div class="field">
       <label for="mqttIngestTopic">Ingest topic</label>
-      <input id="mqttIngestTopic" type="text" placeholder="cmnd/visualizer/ingest" />
+      <input id="mqttIngestTopic" type="text" placeholder="cmnd/sigvis/ingest" />
     </div>
     <div class="field" style="flex-direction:row;align-items:center;gap:0.5rem">
       <input id="mqttDebugMode" type="checkbox" style="width:auto;margin:0" />
@@ -175,8 +175,30 @@
       </label>
     </div>
     <p style="font-size:0.78rem;color:#6b7280;margin:0 0 0.75rem">
-      Clear Broker URL to disable MQTT. Leave topic blank to use the default.
+      Clear Broker URL to disable MQTT. Leave topic blank to use the default (<code>cmnd/sigvis/ingest</code>).
     </p>
+    <details style="margin:0 0 0.75rem;font-size:0.82rem">
+      <summary style="cursor:pointer;color:#374151;font-weight:500;user-select:none">Message format example</summary>
+      <p style="margin:0.5rem 0 0.3rem;color:#6b7280">
+        Publish a JSON payload to the ingest topic. The shape is identical to the HTTP ingest API:
+      </p>
+      <pre style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:0.4rem;padding:0.7rem 0.9rem;overflow-x:auto;margin:0;line-height:1.5">{
+  "measurementName": "sensors",
+  "points": {
+    "timestamps": [1748000000000, 1748000001000],
+    "series": {
+      "temperature": [22.4, 22.6],
+      "humidity":    [55.1, 55.3]
+    }
+  }
+}</pre>
+      <p style="margin:0.4rem 0 0;color:#6b7280">
+        <code>timestamps</code> — Unix epoch in <strong>milliseconds</strong>, strictly increasing.<br/>
+        Multiple series can be sent in a single message.<br/>
+        Add <code>"clearMeasurement": true</code> to replace all existing data for that measurement.
+        Add <code>"time": false</code> to indicate that timestamps are not Unix epoch milliseconds, but rather simple numbers (e.g. frequency bins, sample indices).
+      </p>
+    </details>
     <button class="save-btn" id="saveMqttBtn" type="button">Save</button>
     <p class="msg" id="mqttMsg"></p>
   </div>

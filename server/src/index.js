@@ -34,7 +34,7 @@ const serverSettings = new ServerSettingsService({
       clientId:    process.env.MQTT_CLIENT_ID     || "",
       username:    process.env.MQTT_USERNAME      || "",
       password:    process.env.MQTT_PASSWORD      || "",
-      ingestTopic: process.env.MQTT_INGEST_TOPIC  || ""
+      ingestTopic: process.env.MQTT_INGEST_TOPIC  || "cmnd/sigvis/ingest"
     }
   }
 });

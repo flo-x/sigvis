@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
+    "codemirror": "^6.0.2",
     "gridstack": "^12.5.0",
     "uplot": "^1.6.32",
     "vue": "^3.5.32"

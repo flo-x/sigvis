@@ -6,12 +6,19 @@ defineProps({
   isEditMode: {
     type: Boolean,
     default: true
+  },
+  showEditButton: {
+    type: Boolean,
+    default: true
   }
 });
 
 const emit = defineEmits([
   "open-settings",
-  "toggle-edit-mode"
+  "toggle-edit-mode",
+  "open-server-settings",
+  "open-generators",
+  "show-dashboards"
 ]);
 
 // --- Burger menu ---
@@ -28,7 +35,17 @@ function closeBurger() {
 
 function openServerSettings() {
   closeBurger();
-  window.open("/server-settings", "_blank");
+  emit("open-server-settings");
+}
+
+function openGenerators() {
+  closeBurger();
+  emit("open-generators");
+}
+
+function showDashboards() {
+  closeBurger();
+  emit("show-dashboards");
 }
 
 function openSettings() {
@@ -55,6 +72,7 @@ onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
 <template>
   <div class="dashboard-actions">
     <button
+      v-if="showEditButton"
       class="mode-toggle"
       :class="{ active: isEditMode }"
       @click="emit('toggle-edit-mode')"
@@ -64,8 +82,10 @@ onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
     <div class="burger-menu">
       <button class="burger-btn" @click.stop="toggleBurger" title="Menu">☰</button>
       <div v-show="showBurger" class="burger-panel">
+        <button @click="showDashboards">Dashboards</button>
         <button @click="openSettings">Settings</button>
         <button @click="openServerSettings">Server Settings</button>
+        <button @click="openGenerators">Generators &amp; Processors</button>
         <button @click="openAbout">About</button>
       </div>
     </div>

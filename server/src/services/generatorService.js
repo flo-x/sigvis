@@ -226,6 +226,22 @@ class GeneratorService {
     return true;
   }
 
+  reorder(ids) {
+    const next = new Map();
+    for (const id of ids) {
+      if (this._generators.has(id)) {
+        next.set(id, this._generators.get(id));
+      }
+    }
+    for (const [id, gen] of this._generators) {
+      if (!next.has(id)) {
+        next.set(id, gen);
+      }
+    }
+    this._generators = next;
+    this._save();
+  }
+
   // ---------------------------------------------------------------------------
   // Interval management
   // ---------------------------------------------------------------------------

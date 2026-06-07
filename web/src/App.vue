@@ -4,6 +4,9 @@ import DashboardActions from "./components/DashboardActions.vue";
 import DashboardGrid from "./components/DashboardGrid.vue";
 import DashboardTabs from "./components/DashboardTabs.vue";
 import OpenDashboardDialog from "./components/OpenDashboardDialog.vue";
+import ServerSettingsView from "./components/ServerSettingsView.vue";
+import GeneratorsView from "./components/GeneratorsView.vue";
+import ScreenTabs from "./components/ScreenTabs.vue";
 import { listDashboards, openDashboard, saveDashboard, deleteDashboard as deleteSavedDashboardApi } from "./services/dashboardApi";
 import {
   state,
@@ -38,6 +41,7 @@ const openDialogVisible = ref(false);
 const showSettingsDialog = ref(false);
 const savedDashboards = ref([]);
 const actionError = ref("");
+const currentView = ref("dashboard");
 
 // Save-as inline dialog state.
 const saveAsVisible = ref(false);
@@ -242,7 +246,7 @@ watch(
 
 <template>
   <main class="app-shell">
-    <div class="tab-bar">
+    <div v-if="currentView === 'dashboard'" class="tab-bar">
       <DashboardTabs
         :dashboards="state.dashboards"
         :active-dashboard-id="state.activeDashboardId"
@@ -260,13 +264,36 @@ watch(
         :is-edit-mode="isEditMode"
         @open-settings="showSettingsDialog = true"
         @toggle-edit-mode="isEditMode = !isEditMode"
+        @open-server-settings="currentView = 'server-settings'"
+        @open-generators="currentView = 'generators'"
+        @show-dashboards="currentView = 'dashboard'"
+      />
+    </div>
+
+    <div v-else class="tab-bar">
+      <ScreenTabs
+        :current-view="currentView"
+        @navigate="currentView = $event"
+      />
+      <DashboardActions
+        :show-edit-button="false"
+        :is-edit-mode="isEditMode"
+        @open-settings="showSettingsDialog = true"
+        @toggle-edit-mode="isEditMode = !isEditMode"
+        @open-server-settings="currentView = 'server-settings'"
+        @open-generators="currentView = 'generators'"
+        @show-dashboards="currentView = 'dashboard'"
       />
     </div>
 
     <p v-if="actionError" class="action-error">{{ actionError }}</p>
 
+    <ServerSettingsView v-if="currentView === 'server-settings'" />
+
+    <GeneratorsView v-else-if="currentView === 'generators'" />
+
     <DashboardGrid
-      v-if="activeDashboard"
+      v-else-if="activeDashboard"
       :widgets="activeDashboard.widgets"
       :is-edit-mode="isEditMode"
       @remove-widget="removeWidget"

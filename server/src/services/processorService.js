@@ -179,6 +179,22 @@ class ProcessorService {
     return existed;
   }
 
+  reorder(ids) {
+    const next = new Map();
+    for (const id of ids) {
+      if (this._processors.has(id)) {
+        next.set(id, this._processors.get(id));
+      }
+    }
+    for (const [id, proc] of this._processors) {
+      if (!next.has(id)) {
+        next.set(id, proc);
+      }
+    }
+    this._processors = next;
+    this._save();
+  }
+
   // ---------------------------------------------------------------------------
   // Execution
   // ---------------------------------------------------------------------------
