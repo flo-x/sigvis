@@ -1,7 +1,4 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import pkg from "../../../package.json";
-
 defineProps({
   isEditMode: {
     type: Boolean,
@@ -14,65 +11,9 @@ defineProps({
 });
 
 const emit = defineEmits([
-  "open-settings",
   "toggle-edit-mode",
-  "open-server-settings",
-  "open-generators",
-  "open-data-series",
-  "show-dashboards"
+  "navigate-to-settings"
 ]);
-
-// --- Burger menu ---
-const showBurger = ref(false);
-const showAbout  = ref(false);
-
-function toggleBurger() {
-  showBurger.value = !showBurger.value;
-}
-
-function closeBurger() {
-  showBurger.value = false;
-}
-
-function openServerSettings() {
-  closeBurger();
-  emit("open-server-settings");
-}
-
-function openGenerators() {
-  closeBurger();
-  emit("open-generators");
-}
-
-function openDataSeries() {
-  closeBurger();
-  emit("open-data-series");
-}
-
-function showDashboards() {
-  closeBurger();
-  emit("show-dashboards");
-}
-
-function openSettings() {
-  closeBurger();
-  emit("open-settings");
-}
-
-function openAbout() {
-  closeBurger();
-  showAbout.value = true;
-}
-
-function onDocClick(e) {
-  const menu = document.querySelector(".burger-menu");
-  if (menu && !menu.contains(e.target)) {
-    closeBurger();
-  }
-}
-
-onMounted(()        => document.addEventListener("click", onDocClick, true));
-onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
 </script>
 
 <template>
@@ -84,31 +25,15 @@ onBeforeUnmount(()  => document.removeEventListener("click", onDocClick, true));
       @click="emit('toggle-edit-mode')"
     >Edit</button>
 
-    <!-- Burger -->
-    <div class="burger-menu">
-      <button class="burger-btn" @click.stop="toggleBurger" title="Menu">☰</button>
-      <div v-show="showBurger" class="burger-panel">
-        <button @click="showDashboards">Dashboards</button>
-        <button @click="openSettings">Settings</button>
-        <button @click="openServerSettings">Server Settings</button>
-        <button @click="openGenerators">Generators &amp; Processors</button>
-        <button @click="openDataSeries">Data Series</button>
-        <button @click="openAbout">About</button>
-      </div>
-    </div>
+    <button
+      class="settings-btn"
+      title="Settings"
+      @click="emit('navigate-to-settings')"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
   </div>
-
-  <!-- About dialog (teleported to body) -->
-  <Teleport to="body">
-    <div v-if="showAbout" class="dialog-backdrop" @click.self="showAbout = false">
-      <div class="dialog about-dialog">
-        <h3>Sigvis</h3>
-        <p>Node + Vue time-series dashboard</p>
-        <p class="about-version">Version {{ pkg.version }}</p>
-        <div class="dialog-actions">
-          <button type="button" class="primary" @click="showAbout = false">Close</button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
 </template>

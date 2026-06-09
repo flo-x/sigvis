@@ -7,6 +7,8 @@ import OpenDashboardDialog from "./components/OpenDashboardDialog.vue";
 import ServerSettingsView from "./components/ServerSettingsView.vue";
 import GeneratorsView from "./components/GeneratorsView.vue";
 import DataSeriesView from "./components/DataSeriesView.vue";
+import SettingsView from "./components/SettingsView.vue";
+import AboutView from "./components/AboutView.vue";
 import ScreenTabs from "./components/ScreenTabs.vue";
 import { listDashboards, openDashboard, saveDashboard, deleteDashboard as deleteSavedDashboardApi } from "./services/dashboardApi";
 import {
@@ -29,17 +31,12 @@ import {
 } from "./stores/dashboardStore";
 import {
   runtimeSettings,
-  setRenderHz,
-  setPointsToRequest,
-  setShowPerformanceOverlay,
-  setTheme,
   setResolvedTheme
 } from "./stores/runtimeSettingsStore";
 import { cadenceRenderMs, setGlobalRenderHz } from "./services/globalCadence";
 
 const isEditMode = ref(true);
 const openDialogVisible = ref(false);
-const showSettingsDialog = ref(false);
 const savedDashboards = ref([]);
 const actionError = ref("");
 const currentView = ref("dashboard");
@@ -263,12 +260,8 @@ watch(
       />
       <DashboardActions
         :is-edit-mode="isEditMode"
-        @open-settings="showSettingsDialog = true"
         @toggle-edit-mode="isEditMode = !isEditMode"
-        @open-server-settings="currentView = 'server-settings'"
-        @open-generators="currentView = 'generators'"
-        @open-data-series="currentView = 'data-series'"
-        @show-dashboards="currentView = 'dashboard'"
+        @navigate-to-settings="currentView = 'settings'"
       />
     </div>
 
@@ -280,18 +273,18 @@ watch(
       <DashboardActions
         :show-edit-button="false"
         :is-edit-mode="isEditMode"
-        @open-settings="showSettingsDialog = true"
         @toggle-edit-mode="isEditMode = !isEditMode"
-        @open-server-settings="currentView = 'server-settings'"
-        @open-generators="currentView = 'generators'"
-        @open-data-series="currentView = 'data-series'"
-        @show-dashboards="currentView = 'dashboard'"
+        @navigate-to-settings="currentView = 'settings'"
       />
     </div>
 
     <p v-if="actionError" class="action-error">{{ actionError }}</p>
 
-    <ServerSettingsView v-if="currentView === 'server-settings'" />
+    <SettingsView v-if="currentView === 'settings'" />
+
+    <AboutView v-else-if="currentView === 'about'" />
+
+    <ServerSettingsView v-else-if="currentView === 'server-settings'" />
 
     <GeneratorsView v-else-if="currentView === 'generators'" />
 
@@ -313,50 +306,6 @@ watch(
       @open-dashboard="openDashboardByName"
       @delete-dashboard="deleteSavedDashboard"
     />
-
-    <div v-if="showSettingsDialog" class="dialog-backdrop" @click.self="showSettingsDialog = false">
-      <div class="dialog settings-dialog">
-        <h3>Settings</h3>
-        <label class="settings-field">
-          Render Hz
-          <input
-            type="number" min="0.1" step="0.1"
-            :value="runtimeSettings.renderHz"
-            @change="setRenderHz(Number($event.target.value))"
-          />
-        </label>
-        <label class="settings-field">
-          Points to request
-          <input
-            type="number" min="1" step="1"
-            :value="runtimeSettings.pointsToRequest"
-            @change="setPointsToRequest(Number($event.target.value))"
-          />
-        </label>
-        <label class="settings-field settings-field--checkbox">
-          <input
-            type="checkbox"
-            :checked="runtimeSettings.showPerformanceOverlay"
-            @change="setShowPerformanceOverlay($event.target.checked)"
-          />
-          Performance overlay
-        </label>
-        <label class="settings-field">
-          Theme
-          <select
-            :value="runtimeSettings.theme"
-            @change="setTheme($event.target.value)"
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
-        <div class="dialog-actions">
-          <button type="button" class="primary" @click="showSettingsDialog = false">Close</button>
-        </div>
-      </div>
-    </div>
 
     <div v-if="saveAsVisible" class="dialog-backdrop" @click.self="onSaveAsCancel">
       <div class="dialog save-as-dialog">
@@ -390,33 +339,5 @@ watch(
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 0.5rem;
-}
-.settings-dialog {
-  width: min(340px, 92vw);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.settings-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-}
-.settings-field input[type="number"],
-.settings-field select {
-  width: 5rem;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--c-border);
-  border-radius: 4px;
-  font: inherit;
-  background: var(--c-surface);
-  color: var(--c-text);
-}
-.settings-field--checkbox {
-  justify-content: flex-start;
-  gap: 0.5rem;
-  cursor: pointer;
 }
 </style>

@@ -43,6 +43,8 @@
   --c-amber:          #fbbf24;
   --c-amber-hover:    #f59e0b;
   --c-indigo:         #a0a0a0;
+  --c-accent:         #c2572a;
+  --c-accent-dim:     #6b2c18;
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */
@@ -1100,6 +1102,27 @@ button.danger {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* ── Settings gear button ─────────────────────────────────────────────────── */
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--c-text-3);
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+
+.settings-btn:hover {
+  background: var(--c-surface-hover);
+  border-color: var(--c-border);
+  color: var(--c-text-2);
+}
+
 /* ── File menu dropdown ───────────────────────────────────────────────────── */
 .file-menu {
   position: relative;
@@ -2123,3 +2146,82 @@ button.danger {
   text-align: right;
 }
 
+/* ── Dark theme accent overrides ──────────────────────────────────────────── */
+
+/* Tab bar bottom line — subtle accent glow */
+[data-theme="dark"] .dashboard-tabs {
+  border-bottom-color: var(--c-accent-dim);
+}
+
+/* Active tab: accent top border, lighter text */
+[data-theme="dark"] .dashboard-tabs .tab.active {
+  color: #dddddd;
+  border-top-color: var(--c-accent);
+}
+
+/* Tab drag-over highlight */
+[data-theme="dark"] .tab-drag-over {
+  border-color: var(--c-accent) !important;
+  background: rgba(194, 87, 42, 0.12) !important;
+}
+
+/* Widget header separator */
+[data-theme="dark"] .widget-header {
+  border-bottom-color: var(--c-accent-dim);
+}
+
+/* Config panel header separator */
+[data-theme="dark"] .config-panel-header {
+  border-bottom-color: var(--c-accent-dim);
+}
+
+/* Config panel footer separator */
+[data-theme="dark"] .config-panel-footer {
+  border-top-color: var(--c-accent-dim);
+}
+
+/* Config panel resize handle */
+[data-theme="dark"] .config-panel-resize::after {
+  background: var(--c-accent-dim);
+}
+[data-theme="dark"] .config-panel-resize:hover::after,
+[data-theme="dark"] .config-panel-resize:active::after {
+  background: var(--c-accent);
+}
+
+/* "Add Widget" primary action button — grey text, accent bg when active */
+[data-theme="dark"] .tab-action-btn--primary {
+  color: var(--c-text-3);
+  border-color: var(--c-border);
+}
+[data-theme="dark"] .tab-action-btn--primary:hover {
+  background: var(--c-surface-hover);
+  border-color: var(--c-border);
+  color: var(--c-text-2);
+}
+
+/* Edit button — grey when inactive, dark accent bg when active */
+[data-theme="dark"] .mode-toggle {
+  color: var(--c-text-3);
+}
+[data-theme="dark"] .mode-toggle.active {
+  background: #3d1a0a;
+  color: var(--c-text-2);
+  border-color: var(--c-accent-dim);
+  box-shadow: none;
+}
+[data-theme="dark"] .mode-toggle.active:hover {
+  background: #4e220d;
+  border-color: var(--c-accent);
+}
+
+/* Live button — active (live mode on) */
+[data-theme="dark"] .widget-header-actions button.primary {
+  background: #3d1a0a;
+  color: var(--c-text-2);
+  border-color: var(--c-accent-dim);
+}
+[data-theme="dark"] .widget-header-actions button.primary:hover {
+  background: #4e220d;
+  border-color: var(--c-accent);
+}
