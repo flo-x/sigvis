@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import uPlot from "uplot";
 import { subscribeGlobalRender } from "../services/globalCadence";
 
@@ -88,8 +88,96 @@ let chartsBuiltWithStyles = []; // [{width, paths}] per series
 // Series labels hidden by the user via legend clicks. Persists across rebuilds
 // so visibility is preserved when switching live ↔ history mode.
 let hiddenSeriesLabels = new Set();
+// Wheel-zoom event cleanup function — stored so we can detach on chart destroy.
+let wheelZoomCleanup = null;
+// Last Y range produced by the auto-range controller. Updated by yRangeCallback
+// so the wheel handler can restore it when zoom-out is blocked.
+let autoYMin = null;
+let autoYMax = null;
+
+// Drag start position in plot-local CSS pixels (same coordinate space as u.cursor.left/top).
+// Captured at pointerdown so deltaX/deltaY can be computed from actual cursor movement
+// rather than from the selection box, which uPlot fills to full extent on the non-drag axis.
+let dragStartLeft   = -1;
+let dragStartTop    = -1;
+let isDraggingMain  = false;
 
 const MIN_BRUSH_PX = 24;
+
+// ── Drag-selection info card ─────────────────────────────────────────────────
+// Raw values from the active uPlot selection; null when no selection visible.
+const selInfo = ref(null);
+
+function fmtXInfoCard(v) {
+  if (v == null || !Number.isFinite(v)) return "—";
+  if (props.time) {
+    return new Date(v * 1000).toLocaleTimeString("en-GB");
+  }
+  const unit = props.xAxisUnit.trim();
+  const dec  = Math.max(0, Math.round(props.valueDecimals));
+  const fmt  = props.valueFormat;
+  if (fmt === "scientific") { return unit ? `${v.toExponential(dec)} ${unit}` : v.toExponential(dec); }
+  if (fmt === "si") { return toSI(v, dec, unit); }
+  return unit ? `${v.toFixed(dec)} ${unit}` : v.toFixed(dec);
+}
+
+function fmtYInfoCard(v) {
+  if (v == null || !Number.isFinite(v)) return "—";
+  const unit = props.yAxisUnit.trim();
+  const dec  = Math.max(0, Math.round(props.valueDecimals));
+  const fmt  = props.valueFormat;
+  if (fmt === "scientific") { return unit ? `${v.toExponential(dec)} ${unit}` : v.toExponential(dec); }
+  if (fmt === "si") { return toSI(v, dec, unit); }
+  return unit ? `${v.toFixed(dec)} ${unit}` : v.toFixed(dec);
+}
+
+function fmtDeltaX(dx) {
+  if (!Number.isFinite(dx)) return "—";
+  if (props.time) {
+    const sign = dx < 0 ? "-" : "";
+    const adx  = Math.abs(dx);
+    if (adx < 60)   { return `${sign}${adx.toFixed(2)} s`; }
+    if (adx < 3600) { return `${sign}${(adx / 60).toFixed(2)} min`; }
+    return `${sign}${(adx / 3600).toFixed(2)} h`;
+  }
+  return fmtXInfoCard(dx);
+}
+
+const selDisplay = computed(() => {
+  const s = selInfo.value;
+  if (!s) return null;
+  const dec = Math.max(0, Math.round(props.valueDecimals));
+  const yu = props.yAxisUnit.trim();
+  const xu = props.time ? "s" : props.xAxisUnit.trim();
+  const slopeUnit = (yu && xu) ? `${yu}/${xu}` : "";
+
+  const xScale   = mainChart?.scales?.x;
+  const xRange   = (xScale && Number.isFinite(xScale.min) && Number.isFinite(xScale.max))
+    ? Math.abs(xScale.max - xScale.min)
+    : 0;
+  const xEpsilon = xRange > 0 ? xRange / 10000 : 1e-12;
+
+  const absDeltaX = Math.abs(s.deltaX);
+  const slope     = absDeltaX > xEpsilon ? s.deltaY / s.deltaX : null;
+  const slopeStr  = slope == null
+    ? "—"
+    : (Math.abs(slope) >= 1e4 || (Math.abs(slope) < 1e-3 && slope !== 0))
+      ? slope.toExponential(2)
+      : slope.toFixed(dec);
+  const freq = props.time
+    ? (absDeltaX > xEpsilon ? toSI(1 / absDeltaX, dec, "Hz") : "—")
+    : null;
+
+  return {
+    x:         fmtXInfoCard(s.xCursor),
+    y:         fmtYInfoCard(s.yCursor),
+    deltaX:    fmtDeltaX(s.deltaX),
+    deltaY:    fmtYInfoCard(s.deltaY),
+    slope:     slopeStr,
+    slopeUnit,
+    freq,
+  };
+});
 
 function getMainLegendReservedHeight() {
   if (props.showLegend === false) return 0;
@@ -140,6 +228,16 @@ function destroyCharts() {
   cursorRestorePending  = false;
   chartsBuiltWithColors = [];
   chartsBuiltWithStyles = [];
+  selInfo.value         = null;
+  dragStartLeft         = -1;
+  dragStartTop          = -1;
+  isDraggingMain        = false;
+  if (wheelZoomCleanup) {
+    wheelZoomCleanup();
+    wheelZoomCleanup = null;
+  }
+  autoYMin = null;
+  autoYMax = null;
 }
 
 
@@ -443,6 +541,8 @@ function buildCharts() {
 
     prevRangeMin = emaYMin;
     prevRangeMax = emaYMax;
+    autoYMin = emaYMin;
+    autoYMax = emaYMax;
     return [emaYMin, emaYMax];
   }
 
@@ -576,13 +676,38 @@ function buildCharts() {
             lastCursorLeft = u.cursor.left;
             lastCursorTop  = u.cursor.top;
           }
+          // u.select is updated on every mousemove during drag — read it here
+          // so the info card stays live without relying on the one-shot setSelect hook.
+          const sel = u.select;
+          if (isDraggingMain && u.cursor.left >= 0 && dragStartLeft >= 0) {
+            // Use actual cursor movement (start → now) for deltaX/deltaY instead of the
+            // selection box, because uPlot expands the box to full extent on the constrained
+            // axis (e.g. sel.height = full plot height for a horizontal-only drag).
+            const xCursor = u.posToVal(u.cursor.left, "x");
+            const yCursor = u.posToVal(u.cursor.top,  "y");
+            const xStart  = u.posToVal(dragStartLeft,  "x");
+            const yStart  = u.posToVal(dragStartTop,   "y");
+            selInfo.value = {
+              xCursor,
+              yCursor,
+              deltaX: xCursor - xStart,
+              deltaY: yCursor - yStart,
+            };
+          } else {
+            selInfo.value = null;
+          }
         }
+      ],
+      // setSelect fires at mouseUp — clear the card whether or not a zoom follows.
+      setSelect: [
+        () => { selInfo.value = null; }
       ],
       setScale: [
         (u, key) => {
           if (key === "x") {
             setBrushFromMainScale();
             maybeSwitchToHistoryOnZoom();
+            selInfo.value = null;
           }
         }
       ],
@@ -635,6 +760,72 @@ function buildCharts() {
 
   mainChart = new uPlot(mainOptions, mainData, mainChartEl.value);
   overviewChart = new uPlot(overviewOptions, overviewData, overviewChartEl.value);
+
+  // Wheel zoom on the main chart — zooms the X axis around the cursor position.
+  const wheelOver = mainChart.over;
+  const ZOOM_FACTOR = 0.75; // range multiplier per scroll step (< 1 = zoom in)
+  const onWheel = (e) => {
+    e.preventDefault();
+    const { left, top } = mainChart.cursor;
+    if (!Number.isFinite(left) || left < 0) return;
+
+    const xScale = mainChart.scales.x;
+    const yScale = mainChart.scales.y;
+    if (!Number.isFinite(xScale.min) || !Number.isFinite(xScale.max)) return;
+    if (!Number.isFinite(yScale.min) || !Number.isFinite(yScale.max)) return;
+
+    const zoomIn   = e.deltaY < 0;
+    const mult     = zoomIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+
+    // X axis — compute new range.
+    const oxRange  = xScale.max - xScale.min;
+    const leftPct  = left / wheelOver.clientWidth;
+    const xVal     = mainChart.posToVal(left, "x");
+    const nxRange  = oxRange * mult;
+
+    // If zooming out and the new X range would exceed the full data extent,
+    // bail out on zoom but restore Y to auto-range so both axes reset together.
+    if (!zoomIn && overviewXMin != null && overviewXMax != null) {
+      if (nxRange >= overviewXMax - overviewXMin) {
+        if (autoYMin != null && autoYMax != null) {
+          mainChart.setScale("y", { min: autoYMin, max: autoYMax });
+        }
+        return;
+      }
+    }
+
+    let nxMin = xVal - leftPct * nxRange;
+    let nxMax = nxMin + nxRange;
+
+    // Pan-correct X to stay within data bounds (range is already valid here).
+    if (overviewXMin != null && overviewXMax != null) {
+      if (nxMin < overviewXMin) {
+        nxMin = overviewXMin;
+        nxMax = overviewXMin + nxRange;
+      } else if (nxMax > overviewXMax) {
+        nxMax = overviewXMax;
+        nxMin = overviewXMax - nxRange;
+      }
+    }
+
+    // Y axis — zoom around cursor position (btmPct = fraction from bottom).
+    const oyRange  = yScale.max - yScale.min;
+    const btmPct   = 1 - top / wheelOver.clientHeight;
+    const yVal     = mainChart.posToVal(top, "y");
+    const nyRange  = oyRange * mult;
+    const nyMin    = yVal - btmPct * nyRange;
+    const nyMax    = nyMin + nyRange;
+
+    // Batch both scale updates into a single redraw.
+    // Setting X triggers the setScale hook (brush sync + history switch);
+    // Y is set with suppressNextZoomSwitchEvents already handled by X.
+    mainChart.batch(() => {
+      mainChart.setScale("x", { min: nxMin, max: nxMax });
+      mainChart.setScale("y", { min: nyMin, max: nyMax });
+    });
+  };
+  wheelOver.addEventListener("wheel", onWheel, { passive: false });
+  wheelZoomCleanup = () => wheelOver.removeEventListener("wheel", onWheel);
   chartsBuiltWithColors = props.chartData.series.map(s => s.color);
   chartsBuiltWithStyles   = props.chartData.series.map(s => ({ width: s.width ?? 2, paths: s.paths ?? "linear" }));
   if (rebuildScaleToApply && Number.isFinite(rebuildScaleToApply.min) && Number.isFinite(rebuildScaleToApply.max)) {
@@ -822,6 +1013,23 @@ function alignLiveWindowToRightEdge() {
   setBrushFromMainScale();
 }
 
+let onEscapeKeyDown = null;
+
+function cancelMainDrag() {
+  if (!isDraggingMain) return;
+  // Reset the selection rectangle to zero so uPlot's mouseup handler sees
+  // hasSelect = false and skips applying the zoom.
+  if (mainChart) {
+    mainChart.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
+  }
+  // Dispatch a synthetic mouseup on document to end uPlot's internal drag state.
+  document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  isDraggingMain = false;
+  dragStartLeft  = -1;
+  dragStartTop   = -1;
+  selInfo.value  = null;
+}
+
 onMounted(() => {
   refreshCharts();
   unsubscribeGlobalRender = subscribeGlobalRender(() => {
@@ -832,9 +1040,30 @@ onMounted(() => {
   resizeObserver = new ResizeObserver(() => {
     handleResize();
   });
-  onMainChartPointerDown = () => {
-    maybeSwitchToHistoryOnMainPointerDown();
+  const onMainChartPointerUp = () => {
+    isDraggingMain = false;
+    dragStartLeft  = -1;
+    dragStartTop   = -1;
   };
+
+  onMainChartPointerDown = (e) => {
+    maybeSwitchToHistoryOnMainPointerDown();
+    // Record drag start in the same coordinate space as u.cursor.left/top (plot-local CSS px).
+    if (mainChart?.over) {
+      const r = mainChart.over.getBoundingClientRect();
+      dragStartLeft  = e.clientX - r.left;
+      dragStartTop   = e.clientY - r.top;
+      isDraggingMain = true;
+      window.addEventListener("pointerup", onMainChartPointerUp, { once: true });
+    }
+  };
+
+  onEscapeKeyDown = (e) => {
+    if (e.key === "Escape") {
+      cancelMainDrag();
+    }
+  };
+
   if (mainChartEl.value) {
     resizeObserver.observe(mainChartEl.value);
     mainChartEl.value.addEventListener("pointerdown", onMainChartPointerDown);
@@ -842,6 +1071,7 @@ onMounted(() => {
   if (overviewChartEl.value) {
     resizeObserver.observe(overviewChartEl.value);
   }
+  document.addEventListener("keydown", onEscapeKeyDown);
 });
 
 watch(
@@ -932,6 +1162,10 @@ onBeforeUnmount(() => {
     mainChartEl.value.removeEventListener("pointerdown", onMainChartPointerDown);
   }
   onMainChartPointerDown = null;
+  if (onEscapeKeyDown) {
+    document.removeEventListener("keydown", onEscapeKeyDown);
+    onEscapeKeyDown = null;
+  }
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
@@ -952,5 +1186,35 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <Transition name="cdi-fade">
+      <div v-if="selDisplay" class="chart-drag-info">
+        <div class="cdi-row">
+          <span class="cdi-label">X</span>
+          <span class="cdi-val">{{ selDisplay.x }}</span>
+        </div>
+        <div class="cdi-row">
+          <span class="cdi-label">Y</span>
+          <span class="cdi-val">{{ selDisplay.y }}</span>
+        </div>
+        <div class="cdi-divider"></div>
+        <div class="cdi-row">
+          <span class="cdi-label">ΔX</span>
+          <span class="cdi-val">{{ selDisplay.deltaX }}</span>
+        </div>
+        <div v-if="selDisplay.freq" class="cdi-row">
+          <span class="cdi-label">1/|ΔX|</span>
+          <span class="cdi-val">{{ selDisplay.freq }}</span>
+        </div>
+        <div class="cdi-row">
+          <span class="cdi-label">ΔY</span>
+          <span class="cdi-val">{{ selDisplay.deltaY }}</span>
+        </div>
+        <div class="cdi-row">
+          <span class="cdi-label">{{ selDisplay.slopeUnit ? `ΔY/ΔX (${selDisplay.slopeUnit})` : 'ΔY/ΔX' }}</span>
+          <span class="cdi-val">{{ selDisplay.slope }}</span>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
