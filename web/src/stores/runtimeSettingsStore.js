@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 
-const THEME_KEY = "visualizer-theme";
+const THEME_KEY = "sigvis-theme";
 
 function resolveThemeChoice(choice) {
   if (choice === "dark") return "dark";

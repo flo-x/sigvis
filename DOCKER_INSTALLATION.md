@@ -1,6 +1,6 @@
 # Docker Installation Guide
 
-This guide walks you through deploying the Visualizer on a Linux server using Docker, from zero Docker experience to a running, internet-accessible service.
+This guide walks you through deploying Sigvis on a Linux server using Docker, from zero Docker experience to a running, internet-accessible service.
 
 ---
 
@@ -44,7 +44,7 @@ Choose one of these methods.
 Run this on your **local** machine (substitute your server's address and path):
 
 ```bash
-scp -r /path/to/Visualizer user@your-server-ip:/home/user/Visualizer
+scp -r /path/to/Sigvis user@your-server-ip:/home/user/Sigvis
 ```
 
 ### Option B — Clone from Git (if the project is in a repository)
@@ -52,20 +52,20 @@ scp -r /path/to/Visualizer user@your-server-ip:/home/user/Visualizer
 Run this on the **server**:
 
 ```bash
-git clone https://github.com/your-user/your-repo.git ~/Visualizer
+git clone https://github.com/your-user/your-repo.git ~/Sigvis
 ```
 
 ### Option C — Transfer a zip archive
 
 On your local machine:
 ```bash
-zip -r visualizer.zip Visualizer/
-scp visualizer.zip user@your-server-ip:/home/user/
+zip -r sigvis.zip Sigvis/
+scp sigvis.zip user@your-server-ip:/home/user/
 ```
 
 On the server:
 ```bash
-unzip ~/visualizer.zip -d ~/
+unzip ~/sigvis.zip -d ~/
 ```
 
 After this step you should have the project folder on the server. All subsequent commands run **on the server**.
@@ -124,13 +124,13 @@ sudo dnf install -y docker-compose-plugin
 Navigate to the project folder and start everything with a single command:
 
 ```bash
-cd ~/Visualizer
+cd ~/Sigvis
 docker compose up --build -d
 ```
 
 What this does step by step:
 1. **Builds** the Docker image — compiles the Vue frontend inside a temporary container and bundles it with the Node.js server.
-2. **Creates** a named volume (`visualizer-data`) for persistent storage.
+2. **Creates** a named volume (`sigvis-data`) for persistent storage.
 3. **Starts** the container in the background (`-d` = detached).
 
 The first build takes a few minutes because it downloads base images and installs npm packages. Subsequent builds are much faster thanks to Docker's layer cache.
@@ -148,7 +148,7 @@ docker compose ps
 You should see something like:
 ```
 NAME          IMAGE              COMMAND                  STATUS          PORTS
-visualizer    visualizer:latest  "node src/index.js"      Up 2 minutes    0.0.0.0:3000->3000/tcp
+sigvis    sigvis:latest  "node src/index.js"      Up 2 minutes    0.0.0.0:3000->3000/tcp
 ```
 
 ### Check the logs
@@ -306,7 +306,7 @@ From any device outside your network:
 curl http://<your-public-ip-or-hostname>:3000/api/health
 ```
 
-Or open `http://<your-public-ip-or-hostname>:3000` in a browser. You should see the Visualizer dashboard.
+Or open `http://<your-public-ip-or-hostname>:3000` in a browser. You should see the Sigvis dashboard.
 
 ---
 
@@ -321,7 +321,7 @@ environment:
   MQTT_BROKER_URL: "mqtt://192.168.1.10:1883"
   MQTT_USERNAME: "myuser"
   MQTT_PASSWORD: "mypassword"
-  MQTT_INGEST_TOPIC: "cmnd/visualizer/ingest"
+  MQTT_INGEST_TOPIC: "cmnd/sigvis/ingest"
 ```
 
 After editing the file, apply the changes:
@@ -342,40 +342,40 @@ The container stores two kinds of data that must survive restarts and updates:
 
 | Data | Location inside container | Where it actually lives |
 |---|---|---|
-| Saved dashboards | `/app/server/data/dashboards/` | Docker volume `visualizer-data` |
-| Processor definitions | `/app/server/data/processors.json` | Docker volume `visualizer-data` |
+| Saved dashboards | `/app/server/data/dashboards/` | Docker volume `sigvis-data` |
+| Processor definitions | `/app/server/data/processors.json` | Docker volume `sigvis-data` |
 
 The `docker-compose.yml` file already mounts this volume. **You do not need to do anything special** — data is preserved across `docker compose up --build` (updates) and `docker compose restart`.
 
 To see where Docker stores the volume on disk:
 
 ```bash
-docker volume inspect visualizer-data
+docker volume inspect sigvis-data
 ```
 
 To back up the volume:
 
 ```bash
 docker run --rm \
-  -v visualizer-data:/data \
+  -v sigvis-data:/data \
   -v $(pwd):/backup \
-  alpine tar czf /backup/visualizer-data-backup.tar.gz -C /data .
+  alpine tar czf /backup/sigvis-data-backup.tar.gz -C /data .
 ```
 
 To restore from backup:
 
 ```bash
 docker run --rm \
-  -v visualizer-data:/data \
+  -v sigvis-data:/data \
   -v $(pwd):/backup \
-  alpine tar xzf /backup/visualizer-data-backup.tar.gz -C /data
+  alpine tar xzf /backup/sigvis-data-backup.tar.gz -C /data
 ```
 
 ---
 
 ## 11. Day-to-Day Commands
 
-All commands run from the `~/Visualizer` directory on the server.
+All commands run from the `~/Sigvis` directory on the server.
 
 | Task | Command |
 |---|---|
@@ -385,7 +385,7 @@ All commands run from the `~/Visualizer` directory on the server.
 | View live logs | `docker compose logs -f` |
 | View last 100 log lines | `docker compose logs --tail=100` |
 | Check status | `docker compose ps` |
-| Open a shell inside the container | `docker compose exec visualizer sh` |
+| Open a shell inside the container | `docker compose exec sigvis sh` |
 | Stop and remove everything (keeps volume) | `docker compose down` |
 | Stop and remove everything **including data** | `docker compose down -v` ⚠️ |
 
@@ -396,7 +396,7 @@ All commands run from the `~/Visualizer` directory on the server.
 When you have new source code (after a `git pull` or `scp`):
 
 ```bash
-cd ~/Visualizer
+cd ~/Sigvis
 docker compose up --build -d
 ```
 
@@ -421,10 +421,10 @@ sudo dnf install -y nginx certbot python3-certbot-nginx
 
 ### Create a site configuration
 
-Replace `visualizer.example.com` with your real domain name.
+Replace `sigvis.example.com` with your real domain name.
 
 ```bash
-sudo nano /etc/nginx/sites-available/visualizer
+sudo nano /etc/nginx/sites-available/sigvis
 ```
 
 Paste:
@@ -432,7 +432,7 @@ Paste:
 ```nginx
 server {
     listen 80;
-    server_name visualizer.example.com;
+    server_name sigvis.example.com;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -453,7 +453,7 @@ server {
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/visualizer /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/sigvis /etc/nginx/sites-enabled/
 sudo nginx -t          # check for syntax errors
 sudo systemctl reload nginx
 ```
@@ -461,7 +461,7 @@ sudo systemctl reload nginx
 ### Get a free TLS certificate
 
 ```bash
-sudo certbot --nginx -d visualizer.example.com
+sudo certbot --nginx -d sigvis.example.com
 ```
 
 Certbot automatically edits the Nginx config to add HTTPS and redirect HTTP to HTTPS. Certificates renew automatically every 90 days.
@@ -473,7 +473,7 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 ```
 
-After this, the app is accessible at `https://visualizer.example.com` — no port number needed.
+After this, the app is accessible at `https://sigvis.example.com` — no port number needed.
 
 > **DNS requirement:** For Certbot to work, you must first create a DNS A record pointing your domain to your server's public IP address. Do this through your domain registrar's control panel.
 

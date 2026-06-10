@@ -1,0 +1,6 @@
+{
+  "name": "sigvis-electron",
+  "version": "1.0.0",
+  "description": "Electron entry point for the Sigvis desktop app",
+  "private": true
+}

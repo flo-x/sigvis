@@ -3,7 +3,7 @@
  * demo_data.js — synthetic data producer + control server.
  *
  * • Streams five waveform series (sine_fast, sine_slow, cpu_like, memory_like,
- *   spiky) and an optional Demo1 producer into the Visualizer server via
+ *   spiky) and an optional Demo1 producer into the Sigvis server via
  *   POST /api/series/ingest.
  * • Hosts a control web page (default port 3001).
  *
@@ -515,7 +515,7 @@ const server = http.createServer(async (req, res) => {
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
-console.log(`Visualizer server : ${TARGET_URL}`);
+console.log(`Sigvis server : ${TARGET_URL}`);
 console.log(`Control page      : http://localhost:${LISTEN_PORT}`);
 console.log(`Synthetic series  : ${SYNTHETIC_MEASUREMENTS.map((m) => m.measurementName).join(", ")}`);
 console.log(`Rate              : ${GENERATION_HZ} Hz  •  batch every ${BATCH_INTERVAL_MS} ms`);

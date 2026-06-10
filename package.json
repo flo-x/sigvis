@@ -1,21 +1,75 @@
 {
-  "name": "visualizer",
+  "name": "sigvis",
   "version": "1.0.0",
-  "description": "Node + Vue time-series dashboard visualizer",
+  "description": "Sigvis - Real-time data series visualization",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
     "build": "npm run build --prefix web",
-    "start": "npm run start --prefix server"
+    "start": "npm run start --prefix server",
+    "electron:dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\" \"wait-on http://localhost:3000 && ./node_modules/.bin/electron .\"",
+    "electron:build": "npm run build && ./node_modules/.bin/electron-builder",
+    "electron:install": "npm install --prefix electron"
   },
   "keywords": [
-    "vue",
     "dashboard",
-    "timeseries"
+    "timeseries",
+    "real-time"
   ],
-  "author": "",
+  "author": "flo-x",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "electron": "^42.3.2",
+    "electron-builder": "^26.14.0",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "io.github.flo-x.sigvis",
+    "productName": "Sigvis",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "electron/build"
+    },
+    "files": [
+      "electron/main.js",
+      "electron/preload.js",
+      "server/**/*",
+      "!server/node_modules/.cache/**",
+      "web/dist/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "electron/build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "electron/build/icon.icns",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "icon": "electron/build/icon.png",
+      "category": "Development"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "flo-x",
+      "repo": "sigvis"
+    }
   }
 }

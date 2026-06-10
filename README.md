@@ -102,7 +102,7 @@ Node serves the built frontend from `web/dist` and also serves all API routes.
 | `MQTT_CLIENT_ID`        | *(auto)*                 | MQTT client identifier. Auto-generated when blank.                              |
 | `MQTT_USERNAME`         | *(unset)*                | Optional MQTT broker username.                                                  |
 | `MQTT_PASSWORD`         | *(unset)*                | Optional MQTT broker password.                                                  |
-| `MQTT_INGEST_TOPIC`     | `cmnd/visualizer/ingest` | Topic to subscribe to for data ingestion.                                       |
+| `MQTT_INGEST_TOPIC`     | `cmnd/sigvis/ingest` | Topic to subscribe to for data ingestion.                                       |
 
 
 Example:
@@ -110,7 +110,7 @@ Example:
 ```bash
 export PORT=8080
 export MQTT_BROKER_URL=mqtt://192.168.1.10:1883
-export MQTT_INGEST_TOPIC=cmnd/visualizer/ingest
+export MQTT_INGEST_TOPIC=cmnd/sigvis/ingest
 ```
 
 All MQTT settings can also be changed at runtime without restarting the server — use the `/server-settings` page or `PUT /api/admin/config`.
@@ -220,7 +220,7 @@ The server can subscribe to an MQTT broker and ingest data from incoming message
 Configure the broker URL (and optionally credentials and topic) via environment variables or the `/server-settings` page. The payload format is identical to the HTTP ingest endpoint above.
 
 ```
-Topic:   cmnd/visualizer/ingest   (default; configurable)
+Topic:   cmnd/sigvis/ingest   (default; configurable)
 Payload: same JSON as POST /api/series/ingest
 ```
 

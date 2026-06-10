@@ -1,10 +1,10 @@
 const OPENAPI_SPEC = {
   openapi: "3.1.0",
   info: {
-    title: "Visualizer API",
+    title: "Sigvis API",
     version: "2.0.0",
     description: `
-API used by the Visualizer frontend and external data producers.
+API used by the Sigvis frontend and external data producers.
 
 ---
 
@@ -22,7 +22,7 @@ Set the following environment variables before starting the server (or update th
 | \`MQTT_CLIENT_ID\` | Client identifier (auto-generated if blank). |
 | \`MQTT_USERNAME\` | Optional broker username. |
 | \`MQTT_PASSWORD\` | Optional broker password. |
-| \`MQTT_INGEST_TOPIC\` | Topic to subscribe to (default: \`cmnd/visualizer/ingest\`). |
+| \`MQTT_INGEST_TOPIC\` | Topic to subscribe to (default: \`cmnd/sigvis/ingest\`). |
 
 ### Payload format
 
@@ -1060,7 +1060,7 @@ On reconnect, the client should re-send the same \`subscribe\` message. The serv
               },
               ingestTopic: {
                 type: "string",
-                description: "Topic to subscribe to. Defaults to cmnd/visualizer/ingest when blank."
+                description: "Topic to subscribe to. Defaults to cmnd/sigvis/ingest when blank."
               },
               status: {
                 type: "string",

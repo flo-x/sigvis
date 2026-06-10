@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 web/dist/
+dist-electron/
 
 # Runtime data — contains credentials and personal configuration
 server/data/

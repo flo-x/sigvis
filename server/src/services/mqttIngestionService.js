@@ -2,7 +2,7 @@
 const mqtt = require("mqtt");
 const { parseIngestPayload } = require("../utils/ingestPayloadParser");
 
-const DEFAULT_INGEST_TOPIC = "cmnd/visualizer/ingest";
+const DEFAULT_INGEST_TOPIC = "cmnd/sigvis/ingest";
 
 /**
  * Connects to an MQTT broker and ingests data published to the ingest topic.
@@ -18,10 +18,10 @@ const DEFAULT_INGEST_TOPIC = "cmnd/visualizer/ingest";
  *
  * Configuration via environment variables (initial values only — can be changed at runtime):
  *   MQTT_BROKER_URL     — broker URL, e.g. mqtt://localhost:1883 (required to enable MQTT)
- *   MQTT_CLIENT_ID      — client id (default: visualizer-server-<random>)
+ *   MQTT_CLIENT_ID      — client id (default: sigvis-server-<random>)
  *   MQTT_USERNAME       — broker username (optional)
  *   MQTT_PASSWORD       — broker password (optional)
- *   MQTT_INGEST_TOPIC   — topic to subscribe to (default: cmnd/visualizer/ingest)
+ *   MQTT_INGEST_TOPIC   — topic to subscribe to (default: cmnd/sigvis/ingest)
  */
 class MqttIngestionService {
   constructor({ seriesStore, ingestErrorLog, brokerUrl = "", clientId = "", username = "", password = "", ingestTopic = "", debugMode = false }) {
@@ -190,7 +190,7 @@ class MqttIngestionService {
 }
 
 function _randomClientId() {
-  return `visualizer-server-${Math.random().toString(16).slice(2, 8)}`;
+  return `sigvis-server-${Math.random().toString(16).slice(2, 8)}`;
 }
 
 module.exports = { MqttIngestionService };
