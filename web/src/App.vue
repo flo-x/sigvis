@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import DashboardActions from "./components/DashboardActions.vue";
 import DashboardGrid from "./components/DashboardGrid.vue";
 import DashboardTabs from "./components/DashboardTabs.vue";
@@ -35,11 +36,20 @@ import {
 } from "./stores/runtimeSettingsStore";
 import { cadenceRenderMs, setGlobalRenderHz } from "./services/globalCadence";
 
+const route = useRoute();
+const router = useRouter();
+
 const isEditMode = ref(true);
 const openDialogVisible = ref(false);
 const savedDashboards = ref([]);
 const actionError = ref("");
-const currentView = ref("dashboard");
+
+// Derive view name from the current route name.
+const currentView = computed(() => {
+  const name = route.name;
+  if (!name || name === "dashboard" || name === "dashboard-tab") return "dashboard";
+  return name;
+});
 
 // Save-as inline dialog state.
 const saveAsVisible = ref(false);
@@ -68,7 +78,8 @@ function onSaveAsCancel() {
 const activeDashboard = computed(() => getActiveDashboard());
 
 function onCreateDashboard() {
-  createDashboard({ name: nextDefaultDashboardName() });
+  const dashboard = createDashboard({ name: nextDefaultDashboardName() });
+  router.push({ name: "dashboard-tab", params: { id: dashboard.id } });
 }
 
 function applyRuntimeSettingsFromPayload(payload) {
@@ -189,7 +200,36 @@ async function deleteSavedDashboard(name) {
 
 onMounted(() => {
   ensureInitialDashboard();
+  // If the URL contains a dashboard ID, try to activate it.
+  const urlId = route.params.id;
+  if (urlId && state.dashboards.some((d) => d.id === urlId)) {
+    switchDashboard(urlId);
+  }
 });
+
+// When the user hits back/forward to a dashboard-tab route, sync the store.
+watch(
+  () => route.params.id,
+  (id) => {
+    if (id && state.dashboards.some((d) => d.id === id)) {
+      switchDashboard(id);
+    }
+  }
+);
+
+function navigateTo(view) {
+  if (view === "dashboard") {
+    const id = state.activeDashboardId;
+    router.push(id ? { name: "dashboard-tab", params: { id } } : { name: "dashboard" });
+  } else {
+    router.push({ name: view });
+  }
+}
+
+function onSelectDashboard(id) {
+  switchDashboard(id);
+  router.push({ name: "dashboard-tab", params: { id } });
+}
 
 watch(
   () => runtimeSettings.renderHz,
@@ -244,60 +284,56 @@ watch(
 
 <template>
   <main class="app-shell">
-    <div v-if="currentView === 'dashboard'" class="tab-bar">
-      <DashboardTabs
-        :dashboards="state.dashboards"
-        :active-dashboard-id="state.activeDashboardId"
+    <!-- ── Dashboard view ──────────────────────────────────────────────── -->
+    <template v-if="currentView === 'dashboard'">
+      <div class="tab-bar">
+        <DashboardTabs
+          :dashboards="state.dashboards"
+          :active-dashboard-id="state.activeDashboardId"
+          :is-edit-mode="isEditMode"
+          @select="onSelectDashboard"
+          @create="onCreateDashboard"
+          @delete="onDeleteDashboard"
+          @rename="renameDashboard"
+          @reorder="reorderDashboards"
+          @save="saveTabDashboard"
+          @open="onOpenClick"
+          @add-widget="createWidget('dataSeries')"
+        />
+        <DashboardActions
+          :is-edit-mode="isEditMode"
+          @toggle-edit-mode="isEditMode = !isEditMode"
+          @navigate-to-settings="navigateTo('settings')"
+        />
+      </div>
+      <p v-if="actionError" class="action-error">{{ actionError }}</p>
+      <DashboardGrid
+        v-if="activeDashboard"
+        :widgets="activeDashboard.widgets"
         :is-edit-mode="isEditMode"
-        @select="switchDashboard"
-        @create="onCreateDashboard"
-        @delete="onDeleteDashboard"
-        @rename="renameDashboard"
-        @reorder="reorderDashboards"
-        @save="saveTabDashboard"
-        @open="onOpenClick"
-        @add-widget="createWidget('dataSeries')"
+        @remove-widget="removeWidget"
+        @update-widget-config="updateWidgetConfig"
+        @update-widget-layout="updateWidgetLayout"
       />
-      <DashboardActions
-        :is-edit-mode="isEditMode"
-        @toggle-edit-mode="isEditMode = !isEditMode"
-        @navigate-to-settings="currentView = 'settings'"
-      />
+    </template>
+
+    <!-- ── Settings screens (sidebar layout) ───────────────────────────── -->
+    <div v-else class="settings-shell">
+      <aside class="settings-sidebar">
+        <ScreenTabs
+          :current-view="currentView"
+          @navigate="navigateTo($event)"
+        />
+      </aside>
+      <div class="settings-content">
+        <p v-if="actionError" class="action-error">{{ actionError }}</p>
+        <SettingsView v-if="currentView === 'settings'" />
+        <AboutView v-else-if="currentView === 'about'" />
+        <ServerSettingsView v-else-if="currentView === 'server-settings'" />
+        <GeneratorsView v-else-if="currentView === 'generators'" />
+        <DataSeriesView v-else-if="currentView === 'data-series'" />
+      </div>
     </div>
-
-    <div v-else class="tab-bar">
-      <ScreenTabs
-        :current-view="currentView"
-        @navigate="currentView = $event"
-      />
-      <DashboardActions
-        :show-edit-button="false"
-        :is-edit-mode="isEditMode"
-        @toggle-edit-mode="isEditMode = !isEditMode"
-        @navigate-to-settings="currentView = 'settings'"
-      />
-    </div>
-
-    <p v-if="actionError" class="action-error">{{ actionError }}</p>
-
-    <SettingsView v-if="currentView === 'settings'" />
-
-    <AboutView v-else-if="currentView === 'about'" />
-
-    <ServerSettingsView v-else-if="currentView === 'server-settings'" />
-
-    <GeneratorsView v-else-if="currentView === 'generators'" />
-
-    <DataSeriesView v-else-if="currentView === 'data-series'" />
-
-    <DashboardGrid
-      v-else-if="activeDashboard"
-      :widgets="activeDashboard.widgets"
-      :is-edit-mode="isEditMode"
-      @remove-widget="removeWidget"
-      @update-widget-config="updateWidgetConfig"
-      @update-widget-layout="updateWidgetLayout"
-    />
 
     <OpenDashboardDialog
       :open="openDialogVisible"

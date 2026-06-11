@@ -15,8 +15,7 @@ const emit = defineEmits(["navigate"]);
 </script>
 
 <template>
-  <nav class="dashboard-tabs screen-tabs">
-    <!-- Back button — styled as a pill button, not a tab -->
+  <nav class="screen-nav">
     <button
       class="screen-back-btn"
       type="button"
@@ -25,11 +24,10 @@ const emit = defineEmits(["navigate"]);
       ← Dashboards
     </button>
 
-    <!-- Screen tabs -->
     <button
       v-for="tab in SCREEN_TABS"
       :key="tab.id"
-      class="tab"
+      class="screen-nav-tab"
       :class="{ active: currentView === tab.id }"
       type="button"
       @click="emit('navigate', tab.id)"

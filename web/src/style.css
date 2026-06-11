@@ -102,6 +102,99 @@ button.danger {
   margin-bottom: 0.2rem;
 }
 
+/* ── Settings sidebar layout ─────────────────────────────────────────────── */
+.settings-shell {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-sidebar {
+  width: 170px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* ── Vertical screen nav ─────────────────────────────────────────────────── */
+.screen-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0;
+}
+
+.screen-nav .screen-back-btn {
+  align-self: stretch;
+  margin: 0 0 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--c-border);
+  background: none;
+  color: var(--c-text-2);
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.screen-nav .screen-back-btn:hover {
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+}
+
+.screen-nav-tab {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-left: 3px solid transparent;
+  background: none;
+  color: var(--c-text-2);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen-nav-tab:hover {
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+}
+
+.screen-nav-tab.active {
+  color: var(--c-text);
+  font-weight: 500;
+  background: var(--c-surface-subtle);
+  border-left-color: var(--c-border);
+}
+
+[data-theme="dark"] .settings-sidebar {
+  border-right-color: var(--c-accent-dim);
+}
+
+[data-theme="dark"] .screen-nav .screen-back-btn {
+  border-bottom-color: var(--c-accent-dim);
+}
+
+[data-theme="dark"] .screen-nav-tab.active {
+  border-left-color: var(--c-accent);
+  background: rgba(194, 87, 42, 0.08);
+  color: var(--c-text);
+}
+
 /* ── Non-dashboard screen header ─────────────────────────────────────────── */
 .screen-header {
   display: flex;
