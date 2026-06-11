@@ -3,7 +3,7 @@
  * Renders a dynamic config form for a prebuilt generator or processor.
  * Supports param types: measurement, series, select, number, string.
  */
-import { ref, onBeforeUnmount } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 
 const props = defineProps({
   schema:       { type: Array,  default: () => [] },
@@ -49,6 +49,25 @@ function closeOnEscape(e) {
 }
 
 onBeforeUnmount(closeHelp);
+
+// ── Seed defaults into modelValue whenever the schema changes ─────────────────
+// Without this, fields that have a param.default but are never touched by the
+// user are absent from formConfig, causing server-side "required" errors.
+watch(
+  () => props.schema,
+  (schema) => {
+    const patch = {};
+    for (const p of schema) {
+      if (props.modelValue[p.name] === undefined && p.default !== undefined) {
+        patch[p.name] = p.default;
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      emit("update:modelValue", { ...props.modelValue, ...patch });
+    }
+  },
+  { immediate: true }
+);
 
 // ── Field helpers ─────────────────────────────────────────────────────────────
 function fieldValue(param) {

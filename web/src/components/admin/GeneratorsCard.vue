@@ -94,7 +94,59 @@ function typeLabel(item) {
   return pb ? pb.displayName : item.prebuiltId;
 }
 
+// ── Generator code examples ───────────────────────────────────────────────────
+const GEN_EXAMPLES = [
+  {
+    id:       "random-walk",
+    label:    "Random walk",
+    initCode:
+`// Initialise persistent state — runs once on save and on server start.
+state.tsGen = makeTimestamps();
+state.value = 0;`,
+    code:
+`// Random walk producing 10 samples per second (1 point per 100 ms tick).
+const timestamps = state.tsGen(10); // 10 Hz
+
+const values = timestamps.map(() => {
+  state.value = state.value * 0.99 + (Math.random() - 0.5) * 0.1;
+  return +state.value.toFixed(4);
+});
+
+ingest({
+  measurementName: "my_generator",
+  points: { timestamps, series: { value: values } }
+});`,
+  },
+  {
+    id:       "sine-wave",
+    label:    "Sine wave",
+    initCode:
+`// Initialise persistent state — runs once on save and on server start.
+state.tsGen = makeTimestamps();
+state.phase = 0;`,
+    code:
+`// Sine-wave generator: 1 Hz signal, amplitude 1, sampled at 50 Hz.
+// Configure Interval to 100 ms (= 5 samples per tick).
+const FREQ_HZ   = 1;
+const AMPLITUDE = 1;
+const SAMPLE_HZ = 2;
+
+const timestamps = state.tsGen(SAMPLE_HZ);
+
+const values = timestamps.map(() => {
+  state.phase += 2 * Math.PI * FREQ_HZ / SAMPLE_HZ;
+  return +(AMPLITUDE * Math.sin(state.phase)).toFixed(6);
+});
+
+ingest({
+  measurementName: "sine_gen",
+  points: { timestamps, series: { value: values } }
+});`,
+  },
+];
+
 // ── Form state ────────────────────────────────────────────────────────────────
+const selectedExampleId = ref("");
 const formVisible    = ref(false);
 const formMode       = ref("new");
 const formId         = ref("");
@@ -125,21 +177,34 @@ function onPrebuiltChange(id) {
   formConfigErrors.value = {};
 }
 
+function loadExample(id) {
+  const ex = GEN_EXAMPLES.find((e) => e.id === id);
+  if (!ex) { return; }
+  if ((formInitCode.value.trim() || formCode.value.trim()) &&
+      !confirm("Replace current code with this example?")) {
+    selectedExampleId.value = "";
+    return;
+  }
+  formInitCode.value = ex.initCode;
+  formCode.value     = ex.code;
+}
+
 function openNew() {
-  formMode.value       = "new";
-  formId.value         = "";
-  formName.value       = "";
-  formEnabled.value    = true;
-  formIntervalMs.value = 1000;
-  formKind.value       = "prebuilt";
-  formPrebuiltId.value = filteredPrebuilts.value[0]?.id || "";
-  formConfig.value     = {};
-  formConfigErrors.value = {};
-  formInitCode.value   = "";
-  formCode.value       = "";
-  formMsg.value        = "";
-  formMsgErr.value     = false;
-  formVisible.value    = true;
+  formMode.value          = "new";
+  formId.value            = "";
+  formName.value          = "";
+  formEnabled.value       = true;
+  formIntervalMs.value    = 1000;
+  formKind.value          = "prebuilt";
+  formPrebuiltId.value    = filteredPrebuilts.value[0]?.id || "";
+  formConfig.value        = {};
+  formConfigErrors.value  = {};
+  formInitCode.value      = "";
+  formCode.value          = "";
+  selectedExampleId.value = "";
+  formMsg.value           = "";
+  formMsgErr.value        = false;
+  formVisible.value       = true;
 }
 
 async function openEdit(gen) {
@@ -190,7 +255,15 @@ watch(formVisible, (val) => {
 async function saveForm(clearState = false) {
   const name = formName.value.trim();
   if (!name) {
-    formMsg.value   = "Name is required.";
+    formMsg.value    = "Name is required.";
+    formMsgErr.value = true;
+    return;
+  }
+  const duplicate = generators.value.some(
+    (g) => g.name === name && g.id !== formId.value
+  );
+  if (duplicate) {
+    formMsg.value    = `A generator named "${name}" already exists.`;
     formMsgErr.value = true;
     return;
   }
@@ -329,6 +402,7 @@ onBeforeUnmount(() => {
           <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td>ingest({...})</td><td>function</td><td>Writes data into the store. Merges by default; add <code>clearMeasurement: true</code> to wipe existing data first.</td></tr>
+            <tr><td>makeTimestamps()</td><td>function</td><td>Returns a stateful timestamp-generator function. Call once in the init script: <code>state.tsGen = makeTimestamps()</code>. Each tick call <code>state.tsGen(hz)</code> with the desired sample rate — returns the array of timestamps (spaced at exactly 1000/hz ms) covering the time since the last call.</td></tr>
             <tr><td>getMeasurement(name)</td><td>function</td><td>Returns <code>&#123; timestamps, series &#125;</code> or <code>null</code>.</td></tr>
             <tr><td>listMeasurements()</td><td>function</td><td>Returns <code>string[]</code> of all known measurement names.</td></tr>
             <tr><td>setIntervalMs(ms)</td><td>function</td><td>Change the firing rate at runtime (non-persistent).</td></tr>
@@ -345,34 +419,25 @@ onBeforeUnmount(() => {
 
         <h4>Example — Sine-wave generator</h4>
         <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0 0 0.35rem">
-          Configure with <strong>Interval: 100 ms</strong>. Produces 5 samples per tick at 50 Hz —
-          a smooth 1 Hz sine of amplitude 1.
+          Configure with <strong>Interval: 100 ms</strong>. Uses <code>makeTimestamps(50)</code> to
+          produce exactly 5 timestamps per tick at 50 Hz — a smooth 1 Hz sine of amplitude 1.
+          No manual step-counting needed.
         </p>
         <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0 0 0.35rem"><strong>Init script</strong></p>
-        <pre>state.phaseRad = 0;
-state.lastTs   = null;</pre>
+        <pre>state.tsGen = makeTimestamps();
+state.phase = 0;</pre>
         <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0.5rem 0 0.35rem"><strong>Process script</strong></p>
-        <pre>// Parameters — adjust to taste
-const FREQ_HZ     = 1;     // signal frequency in Hz
-const AMPLITUDE   = 1;     // peak amplitude
-const SAMPLE_HZ   = 50;    // samples per second to produce each tick
-const intervalSec = 0.1;   // must match the configured Interval (100 ms)
+        <pre>// Sine-wave generator: 1 Hz signal, amplitude 1.
+const FREQ_HZ   = 1;
+const AMPLITUDE = 1;
+const SAMPLE_HZ = 50;
 
-const now    = Date.now();
-const stepMs = 1000 / SAMPLE_HZ;
-const count  = Math.round(intervalSec * SAMPLE_HZ);
+const timestamps = state.tsGen(SAMPLE_HZ);
 
-const timestamps = [];
-const values     = [];
-
-for (let i = 0; i &lt; count; i++) {
-  const ts    = now - (count - 1 - i) * stepMs;
-  const dtSec = state.lastTs == null ? 0 : (ts - state.lastTs) / 1000;
-  state.phaseRad += 2 * Math.PI * FREQ_HZ * dtSec;
-  state.lastTs    = ts;
-  timestamps.push(ts);
-  values.push(+(AMPLITUDE * Math.sin(state.phaseRad)).toFixed(6));
-}
+const values = timestamps.map(() => {
+  state.phase += 2 * Math.PI * FREQ_HZ / SAMPLE_HZ;
+  return +(AMPLITUDE * Math.sin(state.phase)).toFixed(6);
+});
 
 ingest({
   measurementName: "sine_gen",
@@ -490,6 +555,18 @@ ingest({
 
       <!-- Custom script section -->
       <template v-else>
+        <div class="adm-field adm-field--inline">
+          <label for="genExampleSelect">Load example</label>
+          <select
+            id="genExampleSelect"
+            v-model="selectedExampleId"
+            style="max-width: 22rem"
+            @change="loadExample(selectedExampleId)"
+          >
+            <option value="">— choose an example —</option>
+            <option v-for="ex in GEN_EXAMPLES" :key="ex.id" :value="ex.id">{{ ex.label }}</option>
+          </select>
+        </div>
         <div class="adm-field">
           <label>Init script <span class="adm-label-sub">(runs once on save and server start)</span></label>
           <CodeMirrorEditor v-model="formInitCode" />

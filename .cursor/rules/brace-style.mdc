@@ -1,7 +1,7 @@
 ---
 description: Always use braces for if/else/for/while bodies
 globs: **/*.js,**/*.ts,**/*.vue
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Brace Style

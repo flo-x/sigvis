@@ -396,11 +396,46 @@ class GeneratorService {
       service._restartWithNewInterval(gen, clamped);
     }
 
+    /**
+     * Returns a stateful timestamp-generator function.
+     * Call once in the init script and store the result in `state`:
+     *   state.tsGen = makeTimestamps();
+     * Then call it each tick, passing the desired sample rate:
+     *   const timestamps = state.tsGen(50);   // 50 Hz
+     * Timestamps are spaced at exactly 1000/frequencyHz ms apart.
+     * The first call returns a single timestamp (now).
+     */
+    function makeTimestamps() {
+      let lastTs = null;
+
+      return function getTimestamps(frequencyHz) {
+        if (!frequencyHz || frequencyHz <= 0) {
+          throw new Error("makeTimestamps: frequencyHz must be a positive number");
+        }
+        const stepMs = 1000 / frequencyHz;
+        const now    = Date.now();
+        if (lastTs === null) {
+          lastTs = now - stepMs;
+        }
+        const elapsed = now - lastTs;
+        const count   = Math.floor(elapsed / stepMs);
+        if (count === 0) {
+          return [];
+        }
+        const result  = [];
+        for (let i = 1; i <= count; i++) {
+          result.push(lastTs + i * stepMs);
+        }
+        lastTs = result[result.length - 1];
+        return result;
+      };
+    }
+
     function log(msg) {
       console.log(`[Generator:${gen.name}]`, msg);
     }
 
-    return { ingest, getMeasurement, listMeasurements, setIntervalMs, log };
+    return { ingest, getMeasurement, listMeasurements, setIntervalMs, makeTimestamps, log };
   }
 
   // ---------------------------------------------------------------------------

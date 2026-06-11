@@ -1576,6 +1576,16 @@ button.danger {
   border-color: var(--c-primary);
 }
 
+.adm-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.adm-field--inline label {
+  flex-shrink: 0;
+}
+
 .adm-field-row {
   display: flex;
   flex-direction: row;

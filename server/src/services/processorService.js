@@ -305,6 +305,16 @@ class ProcessorService {
     const store = this._store;
     const ingestErrorLog = this._ingestErrorLog;
 
+    function _computeNewCount(measurementName, timestamps) {
+      const lastTs = proc.lastProcessedTs.get(measurementName) ?? -Infinity;
+      let count = 0;
+      for (let i = timestamps.length - 1; i >= 0; i--) {
+        if (timestamps[i] <= lastTs) break;
+        count++;
+      }
+      return count;
+    }
+
     function getMeasurement(name) {
       const measurement = store.measurementsByName.get(name);
       if (!measurement || measurement.dataByName.size === 0) return null;
@@ -313,7 +323,17 @@ class ProcessorService {
       if (timestamps.length === 0) return null;
       const series = {};
       for (const [sName, vals] of dataByName) series[sName] = vals;
-      return { timestamps, series };
+
+      const newCount = _computeNewCount(name, timestamps);
+      const newStart = timestamps.length - newCount;
+
+      return {
+        timestamps,
+        series,
+        getNewPointCount()       { return newCount; },
+        getNewTimestamps()       { return timestamps.slice(newStart); },
+        getNewValues(seriesName) { return series[seriesName]?.slice(newStart) ?? []; },
+      };
     }
 
     function listMeasurements() {
@@ -321,16 +341,7 @@ class ProcessorService {
     }
 
     function getNewPointCount(measurementName) {
-      const lastTs = proc.lastProcessedTs.get(measurementName) ?? -Infinity;
-      const measurement = store.measurementsByName.get(measurementName);
-      if (!measurement) return 0;
-      const { timestamps } = measurement;
-      let count = 0;
-      for (let i = timestamps.length - 1; i >= 0; i--) {
-        if (timestamps[i] <= lastTs) break;
-        count++;
-      }
-      return count;
+      return getMeasurement(measurementName)?.getNewPointCount() ?? 0;
     }
 
     function ingest(payload) {

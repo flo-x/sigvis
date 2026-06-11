@@ -39,13 +39,19 @@ function extractLineInfo(stack, filename) {
  * Compile a vm.Script, returning `{ script }` on success or `{ error }` on failure.
  * The `filename` is used for stack-trace attribution and must match what you pass
  * to `runScript` / `extractLineInfo` when reporting errors.
+ *
+ * User code is wrapped in an IIFE so that `return` can be used for early exit.
+ * `lineOffset: -1` compensates for the added wrapper line, keeping reported
+ * error line numbers aligned with the user's original code.
+ *
  * @param {string} code
  * @param {string} filename
  * @returns {{ script: vm.Script } | { error: string }}
  */
 function compileScript(code, filename) {
+  const wrapped = `(function () {\n${code}\n})();`;
   try {
-    return { script: new vm.Script(code, { filename }) };
+    return { script: new vm.Script(wrapped, { filename, lineOffset: -1 }) };
   } catch (compileErr) {
     const lineInfo = extractLineInfo(compileErr.stack, filename);
     return { error: `Compile error: ${compileErr.message}${lineInfo}` };

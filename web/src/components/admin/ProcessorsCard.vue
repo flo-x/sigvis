@@ -77,7 +77,36 @@ function typeLabel(item) {
   return pb ? pb.displayName : item.prebuiltId;
 }
 
+// ── Processor code examples ───────────────────────────────────────────────────
+const PROC_EXAMPLES = [
+  {
+    id:       "ema-smoothing",
+    label:    "EMA smoothing",
+    initCode:
+`// Initialise persistent state — runs once on save and on server start.
+const dsp = require('dsp');
+// EMA with alpha = 0.2 (higher = faster response, lower = smoother).
+state.ema = dsp.ema(0.2);`,
+    code:
+`// EMA smoothing: appends a "<series>_ema" series to the first available measurement.
+// Change 'name' below to target a specific measurement instead.
+const name = listMeasurements()[0];
+const m = getMeasurement(name);
+if (!m || m.getNewPointCount() === 0) return;
+
+const sourceName = Object.keys(m.series)[0];
+const newTs  = m.getNewTimestamps();
+const newEma = state.ema.update(m.getNewValues(sourceName));
+
+ingest({
+  measurementName: name,
+  points: { timestamps: newTs, series: { [sourceName + "_ema"]: newEma } }
+});`,
+  },
+];
+
 // ── Form state ────────────────────────────────────────────────────────────────
+const selectedExampleId = ref("");
 const formVisible      = ref(false);
 const formMode         = ref("new");
 const formId           = ref("");
@@ -107,20 +136,33 @@ function onPrebuiltChange(id) {
   formConfigErrors.value = {};
 }
 
+function loadExample(id) {
+  const ex = PROC_EXAMPLES.find((e) => e.id === id);
+  if (!ex) { return; }
+  if ((formInitCode.value.trim() || formCode.value.trim()) &&
+      !confirm("Replace current code with this example?")) {
+    selectedExampleId.value = "";
+    return;
+  }
+  formInitCode.value = ex.initCode;
+  formCode.value     = ex.code;
+}
+
 function openNew() {
-  formMode.value       = "new";
-  formId.value         = "";
-  formName.value       = "";
-  formEnabled.value    = true;
-  formKind.value       = "prebuilt";
-  formPrebuiltId.value = filteredPrebuilts.value[0]?.id || "";
-  formConfig.value     = {};
-  formConfigErrors.value = {};
-  formInitCode.value   = "";
-  formCode.value       = "";
-  formMsg.value        = "";
-  formMsgErr.value     = false;
-  formVisible.value    = true;
+  formMode.value          = "new";
+  formId.value            = "";
+  formName.value          = "";
+  formEnabled.value       = true;
+  formKind.value          = "prebuilt";
+  formPrebuiltId.value    = filteredPrebuilts.value[0]?.id || "";
+  formConfig.value        = {};
+  formConfigErrors.value  = {};
+  formInitCode.value      = "";
+  formCode.value          = "";
+  selectedExampleId.value = "";
+  formMsg.value           = "";
+  formMsgErr.value        = false;
+  formVisible.value       = true;
 }
 
 async function openEdit(proc) {
@@ -170,7 +212,15 @@ watch(formVisible, (val) => {
 async function saveForm(clearState = false) {
   const name = formName.value.trim();
   if (!name) {
-    formMsg.value   = "Name is required.";
+    formMsg.value    = "Name is required.";
+    formMsgErr.value = true;
+    return;
+  }
+  const duplicate = processors.value.some(
+    (p) => p.name === name && p.id !== formId.value
+  );
+  if (duplicate) {
+    formMsg.value    = `A processor named "${name}" already exists.`;
     formMsgErr.value = true;
     return;
   }
@@ -299,9 +349,9 @@ onBeforeUnmount(() => {
         <table>
           <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td>getMeasurement(name)</td><td>function</td><td>Returns <code>&#123; timestamps, series &#125;</code> or <code>null</code>.</td></tr>
+            <tr><td>getMeasurement(name)</td><td>function</td><td>Returns <code>&#123; timestamps, series, getNewPointCount(), getNewTimestamps(), getNewValues(seriesName) &#125;</code> or <code>null</code>.</td></tr>
             <tr><td>listMeasurements()</td><td>function</td><td>Returns <code>string[]</code> of all known measurement names.</td></tr>
-            <tr><td>getNewPointCount(name)</td><td>function</td><td>Number of points in <em>name</em> that arrived since last run.</td></tr>
+            <tr><td>getNewPointCount(name)</td><td>function</td><td>Shorthand for <code>getMeasurement(name)?.getNewPointCount() ?? 0</code>.</td></tr>
             <tr><td>ingest({...})</td><td>function</td><td>Writes derived data. Merges by default; add <code>clearMeasurement: true</code> to wipe existing data first.</td></tr>
             <tr><td>require(module)</td><td>function</td><td>Load a built-in library. Available: <code>'dsp'</code>.</td></tr>
             <tr><td>state</td><td>object</td><td>Private in-memory storage, shared between scripts.</td></tr>
@@ -316,18 +366,15 @@ const dsp = require('dsp');
 state.ema = dsp.ema(0.1);</pre>
         <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0.5rem 0 0.35rem"><strong>Process script</strong> (runs on every ingest)</p>
         <pre>const m = getMeasurement("cpu_like");
-const count = m ? getNewPointCount("cpu_like") : 0;
+if (!m || m.getNewPointCount() === 0) return;
 
-if (m && count > 0) {
-  const start = m.timestamps.length - count;
-  const newTs  = m.timestamps.slice(start);
-  const newEma = state.ema.update(m.series.value.slice(start));
-
-  ingest({
-    measurementName: "cpu_like",
-    points: { timestamps: newTs, series: { ema: newEma } }
-  });
-}</pre>
+ingest({
+  measurementName: "cpu_like",
+  points: {
+    timestamps: m.getNewTimestamps(),
+    series: { ema: state.ema.update(m.getNewValues("value")) }
+  }
+});</pre>
       </div>
     </SlideOverPanel>
 
@@ -381,21 +428,18 @@ if (m && count > 0) {
 
       <h4>Example — EMA using the DSP library</h4>
       <pre>const dsp = require('dsp');
-const m = getMeasurement("cpu_like");
-const count = m ? getNewPointCount("cpu_like") : 0;
-
 if (!state.ema) state.ema = dsp.ema(0.1);
 
-if (m && count > 0) {
-  const start  = m.timestamps.length - count;
-  const newTs  = m.timestamps.slice(start);
-  const newEma = state.ema.update(m.series.value.slice(start));
+const m = getMeasurement("cpu_like");
+if (!m || m.getNewPointCount() === 0) return;
 
-  ingest({
-    measurementName: "cpu_like",
-    points: { timestamps: newTs, series: { ema: newEma } }
-  });
-}</pre>
+ingest({
+  measurementName: "cpu_like",
+  points: {
+    timestamps: m.getNewTimestamps(),
+    series: { ema: state.ema.update(m.getNewValues("value")) }
+  }
+});</pre>
 
       <h4>Example — Spectrum with Hann window, dB scale, and spectral averaging</h4>
       <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0 0 0.35rem"><strong>Init script</strong></p>
@@ -522,6 +566,18 @@ if (m && m.timestamps.length >= 2) {
 
       <!-- Custom script section -->
       <template v-else>
+        <div class="adm-field adm-field--inline">
+          <label for="procExampleSelect">Load example</label>
+          <select
+            id="procExampleSelect"
+            v-model="selectedExampleId"
+            style="max-width: 22rem"
+            @change="loadExample(selectedExampleId)"
+          >
+            <option value="">— choose an example —</option>
+            <option v-for="ex in PROC_EXAMPLES" :key="ex.id" :value="ex.id">{{ ex.label }}</option>
+          </select>
+        </div>
         <div class="adm-field">
           <label>Init script <span class="adm-label-sub">(runs once on save and server start)</span></label>
           <CodeMirrorEditor v-model="formInitCode" />
