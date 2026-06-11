@@ -397,6 +397,7 @@ onBeforeUnmount(() => {
           <li><strong>Process script</strong> — runs <em>at the configured interval</em>. Produce data and push it via <code>ingest()</code>.</li>
         </ul>
         <p>Generators have <strong>no input trigger</strong> — they produce data autonomously. Output flows through the store and triggers matching processors.</p>
+        <p>Both scripts support <code>return</code> for early exit (e.g. <code>if (timestamps.length === 0) return;</code>).</p>
         <h4>Script API</h4>
         <table>
           <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
@@ -443,6 +444,56 @@ ingest({
   measurementName: "sine_gen",
   points: { timestamps, series: { value: values } }
 });</pre>
+
+        <h4>DSP Library — <code>require('dsp')</code></h4>
+        <p style="font-size: 0.82rem; color: var(--c-text-3); margin: 0 0 0.5rem">
+          Load in the init script: <code>const dsp = require('dsp');</code>
+        </p>
+
+        <p style="font-size: 0.82rem; font-weight: 600; margin: 0 0 0.2rem">dsp.ema(alpha) — Exponential Moving Average</p>
+        <table>
+          <thead><tr><th>Name</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>dsp.ema(alpha)</td><td>Create a stateful EMA. <code>alpha</code> ∈ (0, 1). Higher = faster response, less smoothing. Time constant ≈ 1/alpha samples.</td></tr>
+            <tr><td>instance.update(values)</td><td>Feed an array of new values. Returns smoothed <code>number[]</code> of same length.</td></tr>
+            <tr><td>instance.reset()</td><td>Clear the internal accumulator (e.g. after a data gap).</td></tr>
+            <tr><td>instance.value</td><td>Current accumulator value, or <code>undefined</code> before the first update.</td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size: 0.82rem; font-weight: 600; margin: 0.75rem 0 0.2rem">dsp.median(windowSize) — Sliding-Window Median Filter</p>
+        <table>
+          <thead><tr><th>Name</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>dsp.median(n)</td><td>Create a stateful median filter over the last <code>n</code> samples. Rejects impulse noise. Odd window sizes are conventional.</td></tr>
+            <tr><td>instance.update(values)</td><td>Feed an array of new values. Returns filtered <code>number[]</code> of same length.</td></tr>
+            <tr><td>instance.reset()</td><td>Clear the internal sample buffer.</td></tr>
+            <tr><td>instance.buffer</td><td>Copy of the current window contents (<code>number[]</code>).</td></tr>
+          </tbody>
+        </table>
+
+        <p style="font-size: 0.82rem; font-weight: 600; margin: 0.75rem 0 0.2rem">dsp.spectrum(options) — FFT Spectrum Analyser</p>
+        <table>
+          <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>sampleRateHz</td><td>1</td><td>Sample rate in Hz. Use 1 for normalised [0, 0.5] output.</td></tr>
+            <tr><td>window</td><td>'rect'</td><td>Window function: <code>rect</code>, <code>hann</code>, <code>hamming</code>, <code>blackman</code>.</td></tr>
+            <tr><td>scale</td><td>'magnitude'</td><td><code>'magnitude'</code> (linear) or <code>'db'</code> (decibels, 0 dB = amplitude 1).</td></tr>
+            <tr><td>averaging</td><td>1</td><td>EMA frames for spectral smoothing. 1 = no averaging.</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 0.8rem; margin: 0.3rem 0 0.2rem">
+          <code>instance.compute(values)</code> → <code>&#123; frequencies, magnitudes &#125;</code> — process a new frame of samples (zero-padded to next power of 2).
+        </p>
+        <p style="font-size: 0.8rem; margin: 0 0 0.2rem">
+          <code>instance.reset()</code> — clear the spectral accumulator.<br>
+          <code>instance.configure(opts)</code> — update options at runtime (resets accumulator).
+        </p>
+        <p style="font-size: 0.78rem; color: var(--c-text-3); margin: 0 0 0.25rem">
+          Tip: estimate <code>sampleRateHz</code> from timestamps as <code>1000 / medianDeltaMs</code>.
+          Use power-of-2 block sizes (128, 256, 512 …) for best FFT efficiency.
+          <code>averaging: 8</code> with <code>window: 'hann'</code> is a good starting point for live streams.
+        </p>
       </div>
     </SlideOverPanel>
 
@@ -566,6 +617,12 @@ ingest({
             <option value="">— choose an example —</option>
             <option v-for="ex in GEN_EXAMPLES" :key="ex.id" :value="ex.id">{{ ex.label }}</option>
           </select>
+          <button
+            class="adm-btn adm-help-inline-btn"
+            type="button"
+            title="Script API reference"
+            @click="showHelp = true"
+          >Help</button>
         </div>
         <div class="adm-field">
           <label>Init script <span class="adm-label-sub">(runs once on save and server start)</span></label>

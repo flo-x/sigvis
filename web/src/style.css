@@ -1586,6 +1586,15 @@ button.danger {
   flex-shrink: 0;
 }
 
+.adm-help-inline-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  border-color: var(--c-accent, #c2572a);
+  color: var(--c-accent, #c2572a);
+}
+
 .adm-field-row {
   display: flex;
   flex-direction: row;

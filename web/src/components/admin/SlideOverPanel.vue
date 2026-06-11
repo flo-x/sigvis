@@ -14,7 +14,15 @@ function close() {
 }
 
 watch(() => props.open, (val) => {
-  document.body.style.overflow = val ? "hidden" : "";
+  if (val) {
+    document.body.style.overflow = "hidden";
+  } else {
+    // Restore scroll only when no other panel is still open.
+    const stillOpen = document.querySelectorAll(".config-panel.open").length;
+    if (stillOpen === 0) {
+      document.body.style.overflow = "";
+    }
+  }
 }, { immediate: true });
 
 // ── Resizable width (mirrors DataSeriesWidget config panel) ───────────────────
