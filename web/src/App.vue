@@ -8,6 +8,7 @@ import OpenDashboardDialog from "./components/OpenDashboardDialog.vue";
 import ServerSettingsView from "./components/ServerSettingsView.vue";
 import GeneratorsView from "./components/GeneratorsView.vue";
 import DataSeriesView from "./components/DataSeriesView.vue";
+import SerialIngestView from "./components/SerialIngestView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import AboutView from "./components/AboutView.vue";
 import ScreenTabs from "./components/ScreenTabs.vue";
@@ -332,6 +333,7 @@ watch(
         <ServerSettingsView v-else-if="currentView === 'server-settings'" />
         <GeneratorsView v-else-if="currentView === 'generators'" />
         <DataSeriesView v-else-if="currentView === 'data-series'" />
+        <SerialIngestView v-else-if="currentView === 'serial-ingest'" />
       </div>
     </div>
 

@@ -4,6 +4,7 @@ import AboutView from "./components/AboutView.vue";
 import ServerSettingsView from "./components/ServerSettingsView.vue";
 import GeneratorsView from "./components/GeneratorsView.vue";
 import DataSeriesView from "./components/DataSeriesView.vue";
+import SerialIngestView from "./components/SerialIngestView.vue";
 
 const routes = [
   { path: "/",                   redirect: "/dashboard" },
@@ -13,6 +14,7 @@ const routes = [
   { path: "/server-settings",    name: "server-settings", component: ServerSettingsView },
   { path: "/generators",         name: "generators",      component: GeneratorsView },
   { path: "/data-series",        name: "data-series",     component: DataSeriesView },
+  { path: "/serial-ingest",      name: "serial-ingest",   component: SerialIngestView },
   { path: "/about",              name: "about",           component: AboutView },
 ];
 

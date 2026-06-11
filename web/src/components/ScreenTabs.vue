@@ -4,6 +4,7 @@ const SCREEN_TABS = [
   { id: "server-settings", label: "Server Settings" },
   { id: "generators",      label: "Generators & Processors" },
   { id: "data-series",     label: "Data Series" },
+  { id: "serial-ingest",   label: "Serial Ingest" },
   { id: "about",           label: "About" }
 ];
 
