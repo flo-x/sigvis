@@ -1,9 +1,13 @@
 /**
  * Client-side series color utilities.
  *
- * Color is not sent by the server — it is determined here based on the series
- * compound ID ("measurementName:seriesName"), with per-widget overrides stored
- * in widget.config.seriesColors.
+ * Color is not sent by the server — it is determined here based on the order
+ * in which series appear in the widget's seriesIds array, with per-widget
+ * overrides stored in widget.config.seriesColors.
+ *
+ * All color assignment is palette-based (sequential Tableau 10), matching
+ * exactly the logic the config panel uses. Hash-based fallbacks are intentionally
+ * absent to keep colors consistent between the chart and the config panel.
  */
 
 // Tableau 10 — perceptually distinct, colorblind-friendly categorical palette.
@@ -21,28 +25,44 @@ export const PALETTE = [
 ];
 
 /**
- * Return the default palette color for a series compound ID.
- * Deterministic: same ID always yields the same color.
- * @param {string} id  e.g. "cpu_like:value"
- * @returns {string}   hex color string
+ * Return the first PALETTE color not present in `usedColors`.
+ * Cycles through the palette when all 10 are taken.
+ * @param {Set<string>} usedColors
+ * @returns {string}
  */
-function colorForId(id) {
-  let hash = 5381;
-  for (let i = 0; i < id.length; i++) {
-    hash = ((hash << 5) + hash) ^ id.charCodeAt(i);
-    hash = hash >>> 0; // keep 32-bit unsigned
+export function firstAvailablePaletteColor(usedColors) {
+  for (const color of PALETTE) {
+    if (!usedColors.has(color)) { return color; }
   }
-  return PALETTE[hash % PALETTE.length];
+  return PALETTE[usedColors.size % PALETTE.length];
 }
 
 /**
- * Resolve the display color for a series, applying any widget-level override.
- * @param {string} id        compound series ID
- * @param {object} overrides widget.config.seriesColors map
- * @returns {string}         hex color string
+ * Compute the effective display color for every series in `seriesIds`.
+ *
+ * - Series with an explicit entry in `overrides` use that color.
+ * - Series without an override receive the first Tableau-10 palette color
+ *   not already taken by an override or an earlier auto-assigned series,
+ *   in the order they appear in `seriesIds`.
+ *
+ * This guarantees that the chart and the config panel always agree on colors,
+ * regardless of whether the user has ever opened the config panel.
+ *
+ * @param {string[]} seriesIds  Ordered list of compound series IDs.
+ * @param {object}   overrides  widget.config.seriesColors map (may be empty).
+ * @returns {Object.<string, string>}  id → hex color string
  */
-function resolveColor(id, overrides) {
-  return (overrides && overrides[id]) ? overrides[id] : colorForId(id);
+export function resolveColors(seriesIds, overrides) {
+  const used   = new Set(Object.values(overrides || {}));
+  const result = {};
+  for (const id of seriesIds) {
+    if (overrides && overrides[id]) {
+      result[id] = overrides[id];
+    } else {
+      const color = firstAvailablePaletteColor(used);
+      result[id]  = color;
+      used.add(color);
+    }
+  }
+  return result;
 }
-
-export { colorForId, resolveColor };

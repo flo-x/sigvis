@@ -1,6 +1,6 @@
 # Sigvis: Node + Vue Time-Series Dashboard
 
-Web application served by Node.js with a Vue dashboard frontend for visualizing time-series data using `uPlot`. Supports real-time live data push via WebSocket and data ingestion via HTTP or MQTT.
+Desktop and web application for real-time visualization of time-series data. Supports real-time data ingestion via HTTP or MQTT as well as from serial port (useful for microcontrollers). Server-side **generators** produce synthetic data series on a timer, and **processors** compute derived series automatically after every ingest. Dashboards display the data in real time.
 
 ## Concepts
 

@@ -715,14 +715,21 @@ function buildCharts() {
         (u, i) => {
           // Keep hiddenSeriesLabels in sync whenever the user toggles a series
           // via a legend click, so visibility survives chart rebuilds.
-          if (i === 0) return;
+          if (i === 0) { return; }
           const label = u.series[i]?.label;
-          if (!label) return;
+          if (!label) { return; }
           if (u.series[i].show) {
             hiddenSeriesLabels.delete(label);
           } else {
             hiddenSeriesLabels.add(label);
           }
+          // Reset the dead-band controller so it re-initialises from the new
+          // visible-only data range on the very next yRangeCallback call,
+          // rather than slowly adapting via the EMA from the old range.
+          emaYMin        = null;
+          emaYMax        = null;
+          smoothedTopBuf = BUF_TARGET;
+          smoothedBotBuf = BUF_TARGET;
         }
       ]
     }

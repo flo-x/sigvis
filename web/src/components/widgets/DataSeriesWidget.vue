@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { getSeriesCatalog, getSeriesData, subscribeSeriesData, unsubscribeSeriesData } from "../../services/seriesApi";
 import { alignMeasurements } from "../../utils/alignMeasurements.js";
-import { resolveColor, colorForId, PALETTE } from "../../utils/seriesColor.js";
+import { resolveColors, firstAvailablePaletteColor, PALETTE } from "../../utils/seriesColor.js";
 import TimeSeriesChart from "../TimeSeriesChart.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SeriesStylePicker from "../SeriesStylePicker.vue";
@@ -10,13 +10,6 @@ import { runtimeSettings } from "../../stores/runtimeSettingsStore";
 
 const DEFAULT_SERIES_STYLE = { width: 2, paths: "linear" };
 
-/** Return the first Tableau 10 palette color not already present in `usedColors`. */
-function firstAvailablePaletteColor(usedColors) {
-  for (const color of PALETTE) {
-    if (!usedColors.has(color)) return color;
-  }
-  return PALETTE[usedColors.size % PALETTE.length]; // cycle when all 10 are used
-}
 
 const props = defineProps({
   widget: {
@@ -102,7 +95,7 @@ const pickerPopupStyle = computed(() => {
 
 function openColorPicker(id, event) {
   closeStylePicker();
-  activePickerDraft.value = draftSeriesColors[id] ?? colorForId(id);
+  activePickerDraft.value = draftSeriesColors[id] ?? PALETTE[0];
   pickerAnchorRect.value = event.currentTarget.getBoundingClientRect();
   activeColorPickerId.value = id;
 }
@@ -196,7 +189,7 @@ async function fetchCatalog() {
 }
 
 function resubscribe() {
-  const selected = props.widget.config?.seriesIds || [];
+  const selected      = props.widget.config?.seriesIds || [];
   const colorOverrides = props.widget.config?.seriesColors || {};
   const styleOverrides = props.widget.config?.seriesStyles || {};
   error.value = "";
@@ -206,6 +199,9 @@ function resubscribe() {
     hasPendingChartData.value = true;
     return;
   }
+
+  // Compute palette-based colors once — same strategy as the config panel.
+  const effectiveColors = resolveColors(selected, colorOverrides);
 
   subscribeSeriesData({
     widgetId: props.widget.id,
@@ -221,7 +217,7 @@ function resubscribe() {
           return {
             ...s,
             unit: meta?.unit ?? "",
-            color: resolveColor(id, colorOverrides),
+            color: effectiveColors[id] ?? PALETTE[0],
             ...resolveStyle(id, styleOverrides)
           };
         })
@@ -242,7 +238,7 @@ function resubscribe() {
 
 async function fetchHistoryData() {
   const selected = props.widget.config?.seriesIds || [];
-  if (selected.length === 0) return;
+  if (selected.length === 0) { return; }
   error.value = "";
   try {
     const nextData = await getSeriesData({
@@ -250,14 +246,15 @@ async function fetchHistoryData() {
       points: runtimeSettings.pointsToRequest,
       interval: 30
     });
-    const colorOverrides = props.widget.config?.seriesColors || {};
-    const styleOverrides = props.widget.config?.seriesStyles || {};
+    const colorOverrides  = props.widget.config?.seriesColors || {};
+    const styleOverrides  = props.widget.config?.seriesStyles || {};
+    const effectiveColors = resolveColors(selected, colorOverrides);
     chartTime.value = nextData.time ?? true;
     chartData.value = {
       ...nextData,
       series: nextData.series.map((s) => ({
         ...s,
-        color: resolveColor(s.id, colorOverrides),
+        color: effectiveColors[s.id] ?? PALETTE[0],
         ...resolveStyle(s.id, styleOverrides)
       }))
     };
@@ -556,14 +553,14 @@ watch(draftSeriesIds, (newIds) => {
                 <button
                   type="button"
                   class="color-swatch-btn"
-                  :style="{ background: draftSeriesColors[item.id] ?? colorForId(item.id) }"
+                  :style="{ background: draftSeriesColors[item.id] ?? PALETTE[0] }"
                   :aria-label="`Pick color for ${item.name}`"
                   @click.stop="toggleColorPicker(item.id, $event)"
                 />
                 <button
                   type="button"
                   class="series-style-btn"
-                  :style="{ color: draftSeriesColors[item.id] ?? colorForId(item.id) }"
+                  :style="{ color: draftSeriesColors[item.id] ?? PALETTE[0] }"
                   :aria-label="`Set line style for ${item.name}`"
                   @click.stop="toggleStylePicker(item.id, $event)"
                   >
