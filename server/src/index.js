@@ -15,7 +15,9 @@ const { MqttIngestionService } = require("./services/mqttIngestionService");
 const { ProcessorService }  = require("./services/processorService");
 const { GeneratorService }  = require("./services/generatorService");
 const { IngestErrorLog }          = require("./services/ingestErrorLog");
-const { ServerSettingsService }   = require("./services/serverSettingsService");
+const { ServerSettingsService }      = require("./services/serverSettingsService");
+const { MeasurementConfigService }   = require("./services/measurementConfigService");
+const { SeriesSqliteStore }          = require("./services/seriesSqliteStore");
 const { OPENAPI_SPEC } = require("./openapi");
 
 async function start() {
@@ -43,8 +45,33 @@ async function start() {
 
   const storageAdapter = new FileSystemStorageAdapter(DASHBOARD_STORAGE_DIR);
   const dashboardStorageService = new DashboardStorageService(storageAdapter);
-  const seriesStore = new SeriesInMemoryStore({ defaultThresholdSeconds: 600 });
+
+  const measurementConfigService = new MeasurementConfigService({ dataDir: DATA_DIR });
+  measurementConfigService.load();
+
+  // ── SQLite persistence ────────────────────────────────────────────────────
+  const sqliteDefaultMaxPoints   = serverSettings.get("sqliteDefaultMaxPoints")  ?? 500_000;
+  const sqlitePersistenceEnabled = serverSettings.get("sqlitePersistenceEnabled") ?? false;
+
+  const seriesStore    = new SeriesInMemoryStore({
+    defaultThresholdSeconds:  600,
+    measurementConfigService
+  });
   const ingestErrorLog = new IngestErrorLog();
+
+  const sqliteStore = new SeriesSqliteStore({
+    dataDir:          DATA_DIR,
+    defaultMaxPoints: sqliteDefaultMaxPoints,
+    ingestErrorLog
+  });
+  sqliteStore.open();
+  sqliteStore.setEnabled(sqlitePersistenceEnabled);
+
+  // Load persisted data into the in-memory store BEFORE registering any
+  // update callback so no WebSocket pushes or processor runs fire during load.
+  if (sqlitePersistenceEnabled) {
+    sqliteStore.loadIntoStore(seriesStore);
+  }
   const subscriptionManager = new SubscriptionManager({
     seriesStore,
     minPushIntervalMs: serverSettings.get("minPushIntervalMs")
@@ -55,6 +82,14 @@ async function start() {
   seriesStore.setUpdateCallback((measurementName, earliestModifiedTs, cleared) => {
     subscriptionManager.notifyMeasurementUpdated(measurementName, earliestModifiedTs, cleared);
     processorService.onMeasurementUpdated(measurementName);
+  });
+
+  seriesStore.setPersistCallback((name, timestamps, series, isTime, { replace } = {}) => {
+    sqliteStore.persistPoints(name, timestamps, series, isTime, { replace });
+  });
+
+  seriesStore.setClearCallback((name) => {
+    sqliteStore.clearMeasurement(name);
   });
 
   // Generators are loaded after the store callback is registered so that the
@@ -128,7 +163,7 @@ async function start() {
     })
   );
 
-  app.use(createAdminRouter({ subscriptionManager, mqttService, generatorService, processorService, ingestErrorLog, serverSettings }));
+  app.use(createAdminRouter({ subscriptionManager, mqttService, generatorService, processorService, ingestErrorLog, serverSettings, sqliteStore }));
 
   const webDistPath = path.resolve(__dirname, "..", "..", "web", "dist");
   if (fs.existsSync(webDistPath)) {

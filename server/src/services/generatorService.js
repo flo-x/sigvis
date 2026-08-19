@@ -369,7 +369,7 @@ class GeneratorService {
         const { measurementName, clearMeasurement, time, normalizedTs, normalizedSeries } = parsed;
         if (clearMeasurement) store.clearMeasurementData(measurementName);
         store.setMeasurementTimeFlag(measurementName, time);
-        store.mergeSeriesPoints(measurementName, normalizedTs, normalizedSeries);
+        store.mergeSeriesPoints(measurementName, normalizedTs, normalizedSeries, { defaultPersistent: false });
       } catch (err) {
         service._ingestErrorLog?.record(`Generator:${gen.name}`, err.message);
         throw err;

@@ -7,14 +7,16 @@ const { getCatalogMeta } = require("../prebuilts/index");
  * @param {{ subscriptionManager, mqttService, generatorService, processorService }} services
  * @returns {express.Router}
  */
-function createAdminRouter({ subscriptionManager, mqttService, generatorService, processorService, ingestErrorLog, serverSettings }) {
+function createAdminRouter({ subscriptionManager, mqttService, generatorService, processorService, ingestErrorLog, serverSettings, sqliteStore }) {
   const router = express.Router();
 
   // ── Runtime config ────────────────────────────────────────────────────────
   router.get("/api/admin/config", (_req, res) => {
     res.json({
-      minPushIntervalMs: subscriptionManager.minPushIntervalMs,
-      mqtt: mqttService.getConfig()
+      minPushIntervalMs:        subscriptionManager.minPushIntervalMs,
+      mqtt:                     mqttService.getConfig(),
+      sqlitePersistenceEnabled: sqliteStore?.isEnabled() ?? false,
+      sqliteDefaultMaxPoints:   serverSettings?.get("sqliteDefaultMaxPoints") ?? 500_000
     });
   });
 
@@ -42,8 +44,22 @@ function createAdminRouter({ subscriptionManager, mqttService, generatorService,
         ingestTopic: mqttCfg.ingestTopic,
         debugMode:   mqttCfg.debugMode
       };
-      if (password) mqttPatch.password = password;
+      if (password) { mqttPatch.password = password; }
       settingsPatch.mqtt = mqttPatch;
+    }
+
+    if (req.body?.sqlitePersistenceEnabled !== undefined) {
+      const enabled = Boolean(req.body.sqlitePersistenceEnabled);
+      sqliteStore?.setEnabled(enabled);
+      settingsPatch.sqlitePersistenceEnabled = enabled;
+    }
+
+    if (req.body?.sqliteDefaultMaxPoints !== undefined) {
+      const value = Number(req.body.sqliteDefaultMaxPoints);
+      if (!Number.isFinite(value) || value <= 0) {
+        return res.status(400).json({ error: "Body field 'sqliteDefaultMaxPoints' must be a positive number." });
+      }
+      settingsPatch.sqliteDefaultMaxPoints = Math.trunc(value);
     }
 
     if (Object.keys(settingsPatch).length > 0) {
@@ -51,8 +67,10 @@ function createAdminRouter({ subscriptionManager, mqttService, generatorService,
     }
 
     return res.json({
-      minPushIntervalMs: subscriptionManager.minPushIntervalMs,
-      mqtt: mqttService.getConfig()
+      minPushIntervalMs:        subscriptionManager.minPushIntervalMs,
+      mqtt:                     mqttService.getConfig(),
+      sqlitePersistenceEnabled: sqliteStore?.isEnabled() ?? false,
+      sqliteDefaultMaxPoints:   serverSettings?.get("sqliteDefaultMaxPoints") ?? 500_000
     });
   });
 

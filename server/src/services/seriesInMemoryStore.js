@@ -3,16 +3,24 @@
 const DEFAULT_MAX_POINTS = 50_000;
 
 class SeriesInMemoryStore {
-  constructor({ defaultThresholdSeconds = 600, defaultMaxPoints = DEFAULT_MAX_POINTS } = {}) {
-    this.defaultThresholdSeconds = defaultThresholdSeconds;
-    this.defaultMaxPoints        = defaultMaxPoints;
+  constructor({
+    defaultThresholdSeconds = 600,
+    defaultMaxPoints        = DEFAULT_MAX_POINTS,
+    measurementConfigService = null
+  } = {}) {
+    this.defaultThresholdSeconds   = defaultThresholdSeconds;
+    this.defaultMaxPoints          = defaultMaxPoints;
+    this._measurementConfigService = measurementConfigService;
     // Map<measurementName, { timestamps: number[], dataByName: Map<dataName, number[]> }>
     this.measurementsByName    = new Map();
     this.thresholdSecondsByName = new Map();
     this.maxPointsByName        = new Map();
+    this.isPersistentByName     = new Map();
     // Map<measurementName, boolean> — whether x-axis values are Unix timestamps (true) or raw numbers (false)
     this.timeFlagByName = new Map();
-    this._onUpdate = null;
+    this._onUpdate       = null;
+    this._persistCallback = null;
+    this._clearCallback   = null;
     // Tracks measurements that were cleared since the last ingest, so the
     // update callback can signal "cleared" to downstream consumers.
     this._pendingClearSet = new Set();
@@ -20,6 +28,16 @@ class SeriesInMemoryStore {
 
   setUpdateCallback(fn) {
     this._onUpdate = fn;
+  }
+
+  /** Called after every successful ingestMeasurementPoints / mergeSeriesPoints. */
+  setPersistCallback(fn) {
+    this._persistCallback = fn;
+  }
+
+  /** Called synchronously inside clearMeasurementData so the SQLite store can wipe its rows. */
+  setClearCallback(fn) {
+    this._clearCallback = fn;
   }
 
   getDefaultThresholdSeconds() {
@@ -49,19 +67,51 @@ class SeriesInMemoryStore {
   setThresholdSeconds(measurementName, thresholdSeconds) {
     this.thresholdSecondsByName.set(measurementName, thresholdSeconds);
     this.pruneMeasurement(measurementName, Date.now());
+    if (this._measurementConfigService) {
+      this._measurementConfigService.set(measurementName, { thresholdSeconds });
+    }
   }
 
   setMaxPoints(measurementName, maxPoints) {
     this.maxPointsByName.set(measurementName, maxPoints);
     this.pruneMeasurement(measurementName, Date.now());
+    if (this._measurementConfigService) {
+      this._measurementConfigService.set(measurementName, { maxPoints });
+    }
   }
 
-  ensureMeasurement(measurementName) {
+  getMeasurementPersistent(measurementName) {
+    return this.isPersistentByName.get(measurementName) ?? true;
+  }
+
+  setPersistent(measurementName, persistent) {
+    this.isPersistentByName.set(measurementName, Boolean(persistent));
+    if (this._measurementConfigService) {
+      this._measurementConfigService.set(measurementName, { isPersistent: Boolean(persistent) });
+    }
+  }
+
+  ensureMeasurement(measurementName, { defaultPersistent = true } = {}) {
     if (!this.measurementsByName.has(measurementName)) {
       this.measurementsByName.set(measurementName, {
         timestamps: [],
         dataByName: new Map()
       });
+      // Restore any previously saved per-measurement config on first creation.
+      if (this._measurementConfigService) {
+        const saved = this._measurementConfigService.get(measurementName);
+        if (saved.thresholdSeconds !== undefined) {
+          this.thresholdSecondsByName.set(measurementName, saved.thresholdSeconds);
+        }
+        if (saved.maxPoints !== undefined) {
+          this.maxPointsByName.set(measurementName, saved.maxPoints);
+        }
+        // Use saved isPersistent if present, else fall back to the caller-supplied default.
+        const persistent = saved.isPersistent !== undefined ? saved.isPersistent : defaultPersistent;
+        this.isPersistentByName.set(measurementName, persistent);
+      } else {
+        this.isPersistentByName.set(measurementName, defaultPersistent);
+      }
     }
     return this.measurementsByName.get(measurementName);
   }
@@ -80,13 +130,14 @@ class SeriesInMemoryStore {
    * @param {string} measurementName
    * @param {number[]} timestamps - strictly increasing
    * @param {{ name: string, values: number[] }[]} seriesArray - one or more data series
+   * @param {{ defaultPersistent?: boolean }} [options]
    */
-  ingestMeasurementPoints(measurementName, timestamps, seriesArray) {
+  ingestMeasurementPoints(measurementName, timestamps, seriesArray, { defaultPersistent = true } = {}) {
     if (!this.isStrictlyIncreasing(timestamps)) {
       throw new Error("Timestamps must be strictly increasing.");
     }
 
-    const measurement = this.ensureMeasurement(measurementName);
+    const measurement = this.ensureMeasurement(measurementName, { defaultPersistent });
     const firstTimestamp = timestamps[0];
 
     // Truncate any stored points that overlap with the incoming range.
@@ -133,6 +184,9 @@ class SeriesInMemoryStore {
     if (this._onUpdate) {
       const cleared = this._pendingClearSet.delete(measurementName);
       this._onUpdate(measurementName, timestamps[0], cleared);
+    }
+    if (this.getMeasurementPersistent(measurementName)) {
+      this._persistCallback?.(measurementName, timestamps, seriesArray, this.getMeasurementTimeFlag(measurementName), { replace: true });
     }
     return {
       ingestedCount: timestamps.length,
@@ -203,22 +257,17 @@ class SeriesInMemoryStore {
 
   /**
    * Merge new values for specific series into an existing measurement WITHOUT
-   * truncating any other series.  Used by ProcessorService so that a processor
-   * writing a derived series (e.g. "ema") does not destroy sibling series
-   * (e.g. the original "value") that share the same measurement.
-   *
-   * Semantics per incoming timestamp:
-   *   - If the timestamp already exists in the store → update only the named series.
-   *   - If it does not exist → insert it in sorted order, filling un-named series with null.
+   * truncating any other series.  Used by ProcessorService for derived series (e.g. EMA). Does a two-pointer sorted merge — only touches named series, fills others with `null`. Does **not** truncate siblings.
    *
    * @param {string} measurementName
    * @param {number[]} timestamps  – must be strictly increasing
    * @param {{ name: string, values: number[] }[]} seriesArray
+   * @param {{ defaultPersistent?: boolean }} [options]
    */
-  mergeSeriesPoints(measurementName, timestamps, seriesArray) {
-    if (timestamps.length === 0) return;
+  mergeSeriesPoints(measurementName, timestamps, seriesArray, { defaultPersistent = false } = {}) {
+    if (timestamps.length === 0) { return; }
 
-    const measurement = this.ensureMeasurement(measurementName);
+    const measurement = this.ensureMeasurement(measurementName, { defaultPersistent });
 
     // Ensure every target series exists (fill gaps with null).
     for (const { name } of seriesArray) {
@@ -261,6 +310,9 @@ class SeriesInMemoryStore {
       const cleared = this._pendingClearSet.delete(measurementName);
       this._onUpdate(measurementName, timestamps[0], cleared);
     }
+    if (this.getMeasurementPersistent(measurementName)) {
+      this._persistCallback?.(measurementName, timestamps, seriesArray, this.getMeasurementTimeFlag(measurementName), { replace: false });
+    }
   }
 
   /**
@@ -270,10 +322,13 @@ class SeriesInMemoryStore {
    */
   clearMeasurementData(measurementName) {
     const measurement = this.measurementsByName.get(measurementName);
-    if (!measurement) return;
+    if (!measurement) { return; }
     measurement.timestamps.length = 0;
     measurement.dataByName.clear();
     this._pendingClearSet.add(measurementName);
+    if (this.getMeasurementPersistent(measurementName)) {
+      this._clearCallback?.(measurementName);
+    }
   }
 
   hasMeasurementData(measurementName) {
@@ -300,6 +355,7 @@ class SeriesInMemoryStore {
         time:             this.getMeasurementTimeFlag(measurementName),
         thresholdSeconds: this.getThresholdSeconds(measurementName),
         maxPoints:        this.getMaxPoints(measurementName),
+        persistent:       this.getMeasurementPersistent(measurementName),
         pointCount:       measurement ? measurement.timestamps.length : 0,
         dataSeriesNames:  measurement ? Array.from(measurement.dataByName.keys()) : []
       };

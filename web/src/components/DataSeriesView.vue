@@ -10,10 +10,11 @@ const loadMsgErr       = ref(false);
 const autoRefresh      = ref(true);
 
 // Per-row editing state: { [name]: { thresholdSeconds: string, maxPoints: string } }
-const editing  = ref({});
-const saving   = ref({});
-const editMsg  = ref({});
-const clearing = ref({});
+const editing   = ref({});
+const saving    = ref({});
+const editMsg   = ref({});
+const clearing  = ref({});
+const toggling  = ref({});  // tracks in-flight persistent toggle
 
 // ── Preview (last 100 points) ─────────────────────────────────────────────────
 const previewName    = ref(null);   // expanded measurement name
@@ -140,6 +141,24 @@ async function saveEdit(item) {
   }
 }
 
+// ── Persistent toggle ─────────────────────────────────────────────────────────
+async function togglePersistent(item) {
+  const name = item.measurementName;
+  if (toggling.value[name]) { return; }
+  toggling.value = { ...toggling.value, [name]: true };
+  try {
+    await updateSeriesMeasurement(name, { persistent: !item.persistent });
+    await load();
+  } catch (e) {
+    loadMsg.value    = e.message;
+    loadMsgErr.value = true;
+  } finally {
+    const t = { ...toggling.value };
+    delete t[name];
+    toggling.value = t;
+  }
+}
+
 // ── Clear measurement ─────────────────────────────────────────────────────────
 async function clearMeasurement(item) {
   if (!confirm(`Clear all data points for "${item.measurementName}"?`)) {
@@ -253,6 +272,7 @@ onBeforeUnmount(stopAutoRefresh);
             <th class="ds-col-num">Points</th>
             <th class="ds-col-editable">Retention (s)</th>
             <th class="ds-col-editable">Max points</th>
+            <th class="ds-col-num">Persist</th>
             <th></th>
           </tr>
         </thead>
@@ -336,6 +356,18 @@ onBeforeUnmount(stopAutoRefresh);
               >{{ editMsg[item.measurementName].text }}</span>
             </td>
 
+            <!-- Persist checkbox -->
+            <td class="ds-col-num" style="text-align: center">
+              <input
+                type="checkbox"
+                :checked="item.persistent"
+                :disabled="toggling[item.measurementName]"
+                title="When checked, data is written to SQLite on each ingest"
+                style="cursor: pointer"
+                @change="togglePersistent(item)"
+              />
+            </td>
+
             <!-- Clear button -->
             <td>
               <button
@@ -350,7 +382,7 @@ onBeforeUnmount(stopAutoRefresh);
 
           <!-- Preview row (last 100 points) -->
           <tr v-if="previewName === item.measurementName" class="ds-preview-row">
-            <td colspan="7" style="padding: 0.5rem 0.6rem 0.75rem">
+            <td colspan="8" style="padding: 0.5rem 0.6rem 0.75rem">
               <div v-if="previewLoading" style="font-size: 0.8rem; color: var(--c-text-3)">Loading…</div>
               <div v-else-if="previewError" class="adm-msg adm-msg-error" style="font-size: 0.8rem">{{ previewError }}</div>
               <div v-else-if="!previewData || !previewData.timestamps.length" style="font-size: 0.8rem; color: var(--c-text-3)">No data.</div>

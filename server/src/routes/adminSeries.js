@@ -39,14 +39,20 @@ function createAdminSeriesRouter({ seriesStore }) {
       changed = true;
     }
 
+    if (body.persistent !== undefined) {
+      seriesStore.setPersistent(measurementName, Boolean(body.persistent));
+      changed = true;
+    }
+
     if (!changed) {
-      return res.status(400).json({ error: "Provide at least one of 'thresholdSeconds' or 'maxPoints'." });
+      return res.status(400).json({ error: "Provide at least one of 'thresholdSeconds', 'maxPoints', or 'persistent'." });
     }
 
     return res.json({
       measurementName,
       thresholdSeconds: seriesStore.getThresholdSeconds(measurementName),
-      maxPoints:        seriesStore.getMaxPoints(measurementName)
+      maxPoints:        seriesStore.getMaxPoints(measurementName),
+      persistent:       seriesStore.getMeasurementPersistent(measurementName)
     });
   });
 

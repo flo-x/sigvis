@@ -351,7 +351,7 @@ class ProcessorService {
         const { measurementName, clearMeasurement, time, normalizedTs, normalizedSeries } = parsed;
         if (clearMeasurement) store.clearMeasurementData(measurementName);
         store.setMeasurementTimeFlag(measurementName, time);
-        store.mergeSeriesPoints(measurementName, normalizedTs, normalizedSeries);
+        store.mergeSeriesPoints(measurementName, normalizedTs, normalizedSeries, { defaultPersistent: false });
       } catch (err) {
         ingestErrorLog?.record(`Processor:${proc.name}`, err.message);
         throw err;

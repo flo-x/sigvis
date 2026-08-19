@@ -43,7 +43,10 @@ const router = useRouter();
 const isEditMode = ref(true);
 const openDialogVisible = ref(false);
 
-const LAST_SETTINGS_KEY = "sigvis-last-settings-view";
+const LAST_SETTINGS_KEY    = "sigvis-last-settings-view";
+const OPEN_DASHBOARDS_KEY  = "sigvis-open-dashboards";
+const ACTIVE_DASHBOARD_KEY = "sigvis-active-dashboard";
+
 const lastSettingsView = ref(localStorage.getItem(LAST_SETTINGS_KEY) || "settings");
 const savedDashboards = ref([]);
 const actionError = ref("");
@@ -202,9 +205,42 @@ async function deleteSavedDashboard(name) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // ── Restore previously open dashboards ──────────────────────────────────────
+  // Do NOT call ensureInitialDashboard() yet — we only want the default blank
+  // tab if no saved dashboards can be restored.
+  const storedNames      = JSON.parse(localStorage.getItem(OPEN_DASHBOARDS_KEY) || "[]");
+  const activeName       = localStorage.getItem(ACTIVE_DASHBOARD_KEY);
+  let   activeRestoredId = null;
+
+  for (const name of storedNames) {
+    // Skip names already present (guards against duplicates).
+    if (state.dashboards.some((d) => d.lastSavedName === name)) { continue; }
+    try {
+      const loaded = await openDashboard(name);
+      const tab = loadDashboardPayload(
+        { name: loaded.name, widgets: loaded.dashboard?.widgets || [] },
+        { asNewTab: true }
+      );
+      applyRuntimeSettingsFromPayload(loaded.dashboard);
+      if (name === activeName) {
+        activeRestoredId = tab.id;
+      }
+    } catch {
+      // Dashboard was deleted on the server — skip silently.
+    }
+  }
+
+  // Fall back to a default blank tab only when nothing was restored.
   ensureInitialDashboard();
-  // If the URL contains a dashboard ID, try to activate it.
+
+  // Restore the previously active dashboard tab.
+  if (activeRestoredId) {
+    switchDashboard(activeRestoredId);
+    router.replace({ name: "dashboard-tab", params: { id: activeRestoredId } });
+  }
+
+  // URL takes priority over persisted active — e.g. a shared link or reload.
   const urlId = route.params.id;
   if (urlId && state.dashboards.some((d) => d.id === urlId)) {
     switchDashboard(urlId);
@@ -227,6 +263,29 @@ watch(currentView, (view) => {
     localStorage.setItem(LAST_SETTINGS_KEY, view);
   }
 });
+
+// ── Persist open dashboard names across browser sessions ──────────────────────
+function persistOpenDashboards() {
+  const names = state.dashboards
+    .map((d) => d.lastSavedName)
+    .filter(Boolean);
+  localStorage.setItem(OPEN_DASHBOARDS_KEY, JSON.stringify(names));
+
+  const activeName = state.dashboards
+    .find((d) => d.id === state.activeDashboardId)?.lastSavedName ?? null;
+  if (activeName) {
+    localStorage.setItem(ACTIVE_DASHBOARD_KEY, activeName);
+  } else {
+    localStorage.removeItem(ACTIVE_DASHBOARD_KEY);
+  }
+}
+
+// Re-persist whenever saved names or the active tab change.
+watch(
+  () => state.dashboards.map((d) => d.lastSavedName).join("\0"),
+  persistOpenDashboards
+);
+watch(() => state.activeDashboardId, persistOpenDashboards);
 
 function navigateTo(view) {
   if (view === "dashboard") {

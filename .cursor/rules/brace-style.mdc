@@ -6,13 +6,14 @@ alwaysApply: true
 
 # Brace Style
 
-Always use curly braces for control-flow bodies, even when the body is a single statement.
+Always use curly braces for control-flow bodies, even when the body is a single statement. Use separate lines for the braces.
 
 ```js
 // ❌ BAD
 if (condition) doSomething();
 if (condition)
   doSomething();
+if (condition) { doSomething() } // use separate lines
 
 // ✅ GOOD
 if (condition) {
