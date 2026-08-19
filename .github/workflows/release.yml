@@ -34,7 +34,15 @@ jobs:
         run: npm install
 
       - name: Install server dependencies
-        run: npm install --prefix server
+        # --ignore-scripts: better-sqlite3@13 ships N-API prebuilt binaries for
+        # every platform we target, but npm's publish pipeline still injects an
+        # implicit "node-gyp rebuild" install step whenever a binding.gyp file
+        # is present (a known npm bug, see WiseLibs/better-sqlite3#1503). On
+        # Windows runners without a supported Visual Studio toolchain this
+        # implicit rebuild fails even though no compilation is actually needed.
+        # None of our server dependencies rely on install/postinstall scripts,
+        # so skipping lifecycle scripts here is safe.
+        run: npm install --prefix server --ignore-scripts
 
       - name: Install web dependencies
         run: npm install --prefix web

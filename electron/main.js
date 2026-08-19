@@ -7,7 +7,11 @@ const https = require("node:https");
 // Set data directory to user's app data folder before loading the server,
 // so all persistent files (dashboards, generators, processors, settings)
 // are stored outside the app bundle and survive updates.
+// Both DATA_DIR and DASHBOARD_STORAGE_DIR must be redirected here — otherwise
+// DASHBOARD_STORAGE_DIR falls back to a path inside the read-only app.asar
+// archive, and any write (e.g. mkdir) fails with ENOTDIR.
 process.env.DATA_DIR = app.getPath("userData");
+process.env.DASHBOARD_STORAGE_DIR = path.join(process.env.DATA_DIR, "dashboards");
 
 // Use a dedicated port to avoid clashing with a separately-running server instance.
 if (!process.env.PORT) {
