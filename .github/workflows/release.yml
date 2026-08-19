@@ -33,11 +33,19 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
+      - name: Set up MSVC dev environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install server dependencies
         run: npm install --prefix server
+        env:
+          npm_config_msvs_version: "2022"
 
       - name: Rebuild native addons for Electron
         run: npx --yes @electron/rebuild --module-dir server
+        env:
+          npm_config_msvs_version: "2022"
 
       - name: Install web dependencies
         run: npm install --prefix web
