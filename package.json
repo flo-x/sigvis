@@ -1,6 +1,6 @@
 {
   "name": "sigvis",
-  "version": "1.0.1-beta.3",
+  "version": "1.0.1-beta.5",
   "description": "Sigvis - Real-time data series visualization",
   "main": "electron/main.js",
   "scripts": {
@@ -39,6 +39,9 @@
       "server/**/*",
       "!server/node_modules/.cache/**",
       "web/dist/**/*"
+    ],
+    "asarUnpack": [
+      "server/node_modules/better-sqlite3/**"
     ],
     "win": {
       "target": [
