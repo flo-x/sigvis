@@ -36,6 +36,9 @@ jobs:
       - name: Install server dependencies
         run: npm install --prefix server
 
+      - name: Rebuild native addons for Electron
+        run: npx --yes @electron/rebuild --module-dir server
+
       - name: Install web dependencies
         run: npm install --prefix web
 

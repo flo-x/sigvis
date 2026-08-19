@@ -1,6 +1,6 @@
 {
   "name": "sigvis",
-  "version": "1.0.1-beta.2",
+  "version": "1.0.1-beta.3",
   "description": "Sigvis - Real-time data series visualization",
   "main": "electron/main.js",
   "scripts": {
